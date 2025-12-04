@@ -12,3 +12,4 @@ export const getApplicationById = (id: string) => supabase.getApplicationById(id
 export const createApplication = (data: Parameters<typeof supabase.createApplication>[0]) => supabase.createApplication(data)
 export const updateApplicationStatus = (id: string, candidateId: string, status: string) => supabase.updateApplicationStatus(id, candidateId, status)
 
+

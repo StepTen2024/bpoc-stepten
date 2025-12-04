@@ -29,3 +29,4 @@ Sign up a new user - check Supabase dashboard:
 - `candidate_profiles` table should have new record
 - No records in Railway `users` table
 
+

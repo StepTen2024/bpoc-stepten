@@ -27,3 +27,4 @@ REFERENCES "auth"."users"("id")
 ON DELETE CASCADE 
 ON UPDATE CASCADE;
 
+

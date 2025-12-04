@@ -731,3 +731,4 @@ CREATE TRIGGER set_job_offers_updated_at
 -- All tables created with proper relationships to auth.users
 -- Ready to migrate data from Railway
 
+

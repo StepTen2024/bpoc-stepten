@@ -10,3 +10,4 @@ export type { JobMatch } from './queries.supabase'
 export const getMatchesByCandidate = (candidateId: string) => supabase.getMatchesByCandidate(candidateId)
 export const getMatchCountByCandidate = (candidateId: string) => supabase.getMatchCountByCandidate(candidateId)
 
+

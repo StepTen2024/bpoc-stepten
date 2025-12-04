@@ -286,3 +286,4 @@ CREATE POLICY "Public can view company profiles" ON company_profiles
 -- - BPOC Admins (all data)
 -- - Public (active jobs and companies)
 
+

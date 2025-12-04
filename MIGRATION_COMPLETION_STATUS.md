@@ -67,3 +67,4 @@ npx tsx migrate-data-to-supabase.ts --test
 npx tsx verify-supabase-tables.ts
 ```
 
+

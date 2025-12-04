@@ -77,13 +77,23 @@ export default function LoginForm({ open, onOpenChange, onSwitchToSignUp }: Logi
         // Set flag to indicate user has signed in
         sessionStorage.setItem('hasSignedIn', 'true')
         
-        // Dispatch event to trigger profile check after sign-in
-        window.dispatchEvent(new CustomEvent('userSignedIn'))
+        // Check if user is recruiter or admin
+        const adminLevel = data.user.user_metadata?.admin_level || data.user.user_metadata?.role
+        const isRecruiter = adminLevel === 'recruiter' || adminLevel === 'admin' || data.user.user_metadata?.recruiterSignupFlow
         
         onOpenChange(false)
         setEmail('')
         setPassword('')
         setShowPassword(false)
+        
+        // Redirect based on user type
+        if (isRecruiter) {
+          // Redirect recruiters to recruiter dashboard
+          window.location.href = '/recruiter/dashboard'
+        } else {
+          // Redirect candidates to candidate dashboard
+          window.location.href = '/candidate/dashboard'
+        }
       }
     } catch (error) {
       console.error('Login error:', error)

@@ -12,3 +12,4 @@ export const getResumeBySlug = (slug: string) => supabase.getResumeBySlug(slug)
 export const saveResume = (data: Parameters<typeof supabase.saveResume>[0]) => supabase.saveResume(data)
 export const deleteResume = (candidateId: string) => supabase.deleteResume(candidateId)
 
+

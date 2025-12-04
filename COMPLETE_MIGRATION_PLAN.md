@@ -90,3 +90,4 @@
 - **No Railway:** All routes must go to Supabase only
 - **No Feature Flags:** Direct Supabase usage everywhere
 
+

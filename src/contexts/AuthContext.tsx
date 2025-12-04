@@ -98,6 +98,26 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         setSession(session)
         setUser(session?.user ?? null)
         
+        // Redirect candidates to dashboard after signin
+        if (session?.user && event === 'SIGNED_IN' && typeof window !== 'undefined') {
+          // Check if user is recruiter/admin (skip redirect for them)
+          const adminLevel = session.user.user_metadata?.admin_level || session.user.user_metadata?.role
+          const isRecruiter = adminLevel === 'recruiter' || adminLevel === 'admin' || session.user.user_metadata?.recruiterSignupFlow
+          
+          // Only redirect if not already on candidate/recruiter pages and not a recruiter
+          const currentPath = window.location.pathname
+          const isOnCandidatePage = currentPath.startsWith('/candidate')
+          const isOnRecruiterPage = currentPath.startsWith('/recruiter')
+          
+          if (!isRecruiter && !isOnCandidatePage && !isOnRecruiterPage && currentPath !== '/candidate/dashboard') {
+            // Small delay to ensure sync completes
+            setTimeout(() => {
+              window.location.href = '/candidate/dashboard'
+            }, 500)
+            return
+          }
+        }
+        
         // Handle Google OAuth sign-up flow
         if (session?.user && event === 'SIGNED_IN') {
           console.log('🔍 SIGNED_IN event detected for user:', session.user.email)

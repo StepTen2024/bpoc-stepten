@@ -110,3 +110,4 @@ For each route:
 4. Update column names to match Supabase schema
 5. Test route functionality
 
+

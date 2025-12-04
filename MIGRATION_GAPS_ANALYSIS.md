@@ -275,3 +275,4 @@ ADD COLUMN IF NOT EXISTS notes TEXT;
 - 🟡 High: Leaderboards broken
 - 🟡 High: Recruiter notes/cover letters missing
 
+

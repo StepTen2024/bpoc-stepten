@@ -296,13 +296,14 @@ export default function SignUpForm({ open, onOpenChange, onSwitchToLogin }: Sign
           
           console.log('✅ User auto-signed in after manual registration')
           sessionStorage.setItem('hasSignedIn', 'true')
+          sessionStorage.setItem('showProfileCompletion', 'true') // Trigger profile completion modal
           
           // Close the signup modal
           onOpenChange(false)
           
-          // Dispatch event to trigger profile completion check
+          // Redirect to candidate dashboard
           if (typeof window !== 'undefined') {
-            window.dispatchEvent(new CustomEvent('userSignedIn'))
+            window.location.href = '/candidate/dashboard'
           }
         } catch (signInError) {
           console.error('❌ Error during auto sign-in after registration:', signInError)

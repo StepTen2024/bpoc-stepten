@@ -44,3 +44,4 @@ Once server is up:
    npx prisma generate --schema=prisma-supabase/schema.prisma
    ```
 
+
