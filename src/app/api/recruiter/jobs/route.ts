@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/lib/prisma'
+import { getJobsByRecruiter } from '@/lib/db/jobs'
+import { supabaseAdmin } from '@/lib/supabase/admin'
+import { getCandidateById } from '@/lib/db/candidates'
 
 export async function GET(request: NextRequest) {
   try {
@@ -9,113 +11,75 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    // Verify user is a recruiter
-    const user = await (prisma as any).user.findUnique({
-      where: { id: userId },
-      select: { admin_level: true, company_id: true, is_company_admin: true }
-    })
-    
-    if (!user) {
+    // Verify candidate exists
+    const candidate = await getCandidateById(userId)
+    if (!candidate) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 })
     }
-    
-    if (user.admin_level !== 'recruiter') {
+
+    // Check if user is a recruiter (in bpoc_users table)
+    const { data: bpocUser } = await supabaseAdmin
+      .from('bpoc_users')
+      .select('role')
+      .eq('id', userId)
+      .single()
+
+    if (!bpocUser || bpocUser.role !== 'recruiter') {
       return NextResponse.json({ error: 'Recruiter access required' }, { status: 403 })
     }
 
-    // Fetch from recruiter_jobs table
-    // If user is company admin, show all company jobs; otherwise show only their own
-    console.log('🔍 Fetching jobs for userId:', userId)
-    console.log('🔍 Is company admin:', user.is_company_admin)
-    console.log('🔍 Company ID:', user.company_id)
-    
-    // DISABLED: company_id filtering removed - companies table is being deleted
-    // const whereClause = user.is_company_admin && user.company_id
-    //   ? { company_id: user.company_id }
-    //   : { recruiter_id: userId }
-    
-    // Always filter by recruiter_id now (company_id filtering disabled)
-    const whereClause = { recruiter_id: userId }
-    
-    const recruiterJobs = await (prisma as any).RecruiterJob.findMany({
-      where: whereClause,
-      include: {
-        recruiter: {
-          select: {
-            id: true,
-            full_name: true,
-            company: true,
-            company_id: true
-          }
-        }
-        // DISABLED: companies relation removed
-        // companies: {
-        //   select: {
-        //     id: true,
-        //     name: true
-        //   }
-        // }
-      },
-      orderBy: { created_at: 'desc' }
-    })
+    // Fetch jobs posted by this recruiter from Supabase
+    const jobs = await getJobsByRecruiter(userId)
 
-    console.log('🔍 Database query result:', {
-      rowCount: recruiterJobs.length,
-      rows: recruiterJobs.map((job: any) => ({
-        id: job.id,
-        title: job.job_title,
-        recruiter: job.recruiter,
-        company: job.recruiter?.company
-      }))
-    })
+    // Get company info for each job
+    const jobsWithCompany = await Promise.all(jobs.map(async (job) => {
+      const { data: agencyClient } = await supabaseAdmin
+        .from('agency_clients')
+        .select(`
+          company:companies!inner(
+            name
+          )
+        `)
+        .eq('id', job.agency_client_id)
+        .single()
 
-    let jobs = recruiterJobs.map((row: any, index: number) => {
-      console.log('🔍 Processing job row:', {
-        id: row.id,
-        title: row.job_title,
-        recruiter: row.recruiter,
-        company: row.recruiter?.company,
-        company_id: row.company_id
-        // DISABLED: companies relation removed
-        // companies: row.companies,
-        // finalCompany: row.recruiter?.company || row.companies?.name || row.company_id || 'Unknown Company'
-      });
-      
       return {
-        id: `recruiter_jobs_${row.id}_${index}`, // Create unique ID by combining source table, original ID, and index
-        originalId: String(row.id), // Keep original ID for reference
-        title: row.job_title || 'Untitled Role',
-        description: row.job_description || 'No description available',
-        industry: row.industry || 'Not Specified',
-        department: row.department || 'Not Specified',
-        experienceLevel: row.experience_level || 'Not Specified',
-        salaryMin: row.salary_min || 0,
-        salaryMax: row.salary_max || 0,
-        status: row.status || 'inactive',
-        // DISABLED: companies table reference removed - use recruiter.company as fallback
-        company: row.recruiter?.company || 'Unknown Company',
-        created_at: row.created_at,
-        work_type: row.work_type,
-        work_arrangement: row.work_arrangement,
-        shift: row.shift,
-        priority: row.priority,
-        currency: row.currency,
-        salary_type: row.salary_type,
-        application_deadline: row.application_deadline,
-        requirements: row.requirements || [],
-        responsibilities: row.responsibilities || [],
-        benefits: row.benefits || [],
-        skills: row.skills || [],
-        source_table: 'recruiter_jobs'
-      };
-    });
+        id: job.id,
+        originalId: job.id,
+        title: job.title,
+        description: job.description,
+        industry: job.industry || 'Not Specified',
+        department: job.department || 'Not Specified',
+        experienceLevel: job.experience_level || 'Not Specified',
+        salaryMin: job.salary_min || 0,
+        salaryMax: job.salary_max || 0,
+        status: job.status || 'inactive',
+        company: agencyClient?.company?.name || 'Unknown Company',
+        created_at: job.created_at,
+        work_type: job.work_type,
+        work_arrangement: job.work_arrangement,
+        shift: job.shift,
+        priority: job.priority,
+        currency: job.currency,
+        salary_type: job.salary_type,
+        application_deadline: job.application_deadline,
+        requirements: Array.isArray(job.requirements) ? job.requirements : [],
+        responsibilities: Array.isArray(job.responsibilities) ? job.responsibilities : [],
+        benefits: Array.isArray(job.benefits) ? job.benefits : [],
+        skills: [], // Skills are in job_skills table
+        source_table: 'jobs'
+      }
+    }))
 
-    console.log('🔍 Final jobs array:', jobs)
+    console.log('🔍 Final jobs array:', jobsWithCompany.length)
 
-    return NextResponse.json({ jobs })
+    return NextResponse.json({ jobs: jobsWithCompany })
   } catch (error) {
     console.error('Error fetching jobs:', error)
-    return NextResponse.json({ error: 'Failed to fetch jobs' }, { status: 500 })
+    return NextResponse.json({ 
+      error: 'Failed to fetch jobs',
+      details: error instanceof Error ? error.message : 'Unknown error'
+    }, { status: 500 })
   }
 }
 
@@ -132,214 +96,128 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    console.log('🔍 Verifying user is a recruiter...')
-    // Verify user is a recruiter
-    const user = await (prisma as any).user.findUnique({
-      where: { id: userId },
-      select: { admin_level: true, company_id: true, is_company_admin: true }
-    })
-    
-    console.log('🔍 User found:', user)
-    
-    if (!user) {
-      console.log('❌ User not found in database')
+    // Verify candidate exists
+    const candidate = await getCandidateById(userId)
+    if (!candidate) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 })
     }
-    
-    if (user.admin_level !== 'recruiter') {
-      console.log('❌ User is not a recruiter, admin_level:', user.admin_level)
+
+    // Check if user is a recruiter
+    const { data: bpocUser } = await supabaseAdmin
+      .from('bpoc_users')
+      .select('role, agency_client_id')
+      .eq('id', userId)
+      .single()
+
+    if (!bpocUser || bpocUser.role !== 'recruiter') {
       return NextResponse.json({ error: 'Recruiter access required' }, { status: 403 })
     }
-    
-    console.log('✅ User verified as recruiter')
 
-    // Skip table existence check since we know the table exists
-    console.log('🔍 Proceeding with job creation (table check skipped)')
+    console.log('✅ User verified as recruiter')
 
     const body = await request.json()
     console.log('🔍 Job creation request body:', body)
-    
-    // Get the recruiter user ID and company from the authenticated user
-    const recruiterId = userId
-    // DISABLED: company_id check removed - companies table is being deleted
-    // const recruiterCompanyId = user.company_id
-    console.log('🔍 Recruiter ID:', recruiterId)
-    // console.log('🔍 Recruiter Company ID:', recruiterCompanyId)
-    
-    // DISABLED: Company requirement check removed
-    // Check if company is set (required for new B2B model)
-    // if (!recruiterCompanyId) {
-    //   console.log('❌ Recruiter not linked to a company!')
-    //   return NextResponse.json({ 
-    //     error: 'You must be associated with a company to post jobs. Please register your company first or use an invite code to join an existing company.' 
-    //   }, { status: 400 })
-    // }
-    
+
+    // Get agency_client_id for this recruiter
+    const agencyClientId = bpocUser.agency_client_id
+    if (!agencyClientId) {
+      return NextResponse.json({ 
+        error: 'Recruiter must be associated with an agency client to post jobs' 
+      }, { status: 400 })
+    }
+
     // Map enum values from frontend format to database enum format
     const mapExperienceLevel = (level: string) => {
       switch (level) {
-        case 'entry-level':
-          return 'entry_level'
-        case 'mid-level':
-          return 'mid_level'
-        case 'senior-level':
-          return 'senior_level'
-        default:
-          return 'entry_level' // Default fallback
-      }
-    }
-    
-    const mapWorkArrangement = (arrangement: string) => {
-      switch (arrangement) {
-        case 'onsite':
-          return 'onsite'
-        case 'remote':
-          return 'remote'
-        case 'hybrid':
-          return 'hybrid'
-        default:
-          return 'onsite' // Default fallback
-      }
-    }
-    
-    const mapPriority = (priority: string) => {
-      switch (priority) {
-        case 'low':
-          return 'low'
-        case 'medium':
-          return 'medium'
-        case 'high':
-          return 'high'
-        case 'urgent':
-          return 'urgent'
-        default:
-          return 'medium' // Default fallback
-      }
-    }
-    
-    const mapShift = (shift: string) => {
-      switch (shift) {
-        case 'day':
-          return 'day'
-        case 'night':
-          return 'night'
-        case 'both':
-          return 'both'
-        default:
-          return 'day' // Default fallback
-      }
-    }
-    
-    // Prepare job data for insertion
-    const jobData = {
-      recruiter_id: recruiterId,
-      // DISABLED: company_id removed - companies table is being deleted
-      // company_id: recruiterCompanyId,
-      company_id: null, // Set to null since companies table is being deleted
-      job_title: body.job_title,
-      job_description: body.job_description,
-      industry: body.industry,
-      department: body.department,
-      work_type: body.work_type,
-      work_arrangement: mapWorkArrangement(body.work_arrangement),
-      experience_level: mapExperienceLevel(body.experience_level),
-      salary_min: body.salary_min,
-      salary_max: body.salary_max,
-      currency: body.currency,
-      salary_type: body.salary_type,
-      application_deadline: body.application_deadline ? new Date(body.application_deadline) : null,
-      priority: mapPriority(body.priority),
-      shift: mapShift(body.shift),
-      requirements: body.requirements || [],
-      responsibilities: body.responsibilities || [],
-      benefits: body.benefits || [],
-      skills: body.skills || [],
-      status: 'new_request' // Default status as per your requirements
-    }
-    
-    console.log('🔍 Job data to insert:', jobData)
-    
-    // Check if Prisma client is available
-    console.log('🔍 Prisma client available:', !!prisma)
-    console.log('🔍 Prisma RecruiterJob model available:', !!(prisma as any).RecruiterJob)
-    
-    // Insert into recruiter_jobs table using Prisma
-    console.log('🔍 Attempting to create job in database...')
-    let newJob;
-    
-    try {
-      newJob = await (prisma as any).RecruiterJob.create({
-        data: jobData
-      })
-      console.log('✅ Job created successfully with Prisma:', newJob)
-    } catch (prismaError) {
-      console.error('❌ Prisma error:', prismaError)
-      console.log('🔄 Attempting fallback with raw SQL...')
-      
-      // Fallback: Use raw SQL if Prisma fails
-      const pool = await import('@/lib/database')
-      const client = await pool.default.connect()
-      
-      try {
-        const insertQuery = `
-          INSERT INTO recruiter_jobs (
-            recruiter_id, company_id, job_title, job_description, industry, department,
-            work_type, work_arrangement, experience_level, salary_min, salary_max,
-            currency, salary_type, application_deadline, priority, shift,
-            requirements, responsibilities, benefits, skills, status
-          ) VALUES (
-            $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21
-          ) RETURNING *
-        `
-        
-        const values = [
-          jobData.recruiter_id,
-          jobData.company_id,
-          jobData.job_title,
-          jobData.job_description,
-          jobData.industry,
-          jobData.department,
-          jobData.work_type,
-          jobData.work_arrangement,
-          jobData.experience_level,
-          jobData.salary_min,
-          jobData.salary_max,
-          jobData.currency,
-          jobData.salary_type,
-          jobData.application_deadline,
-          jobData.priority,
-          jobData.shift,
-          jobData.requirements,
-          jobData.responsibilities,
-          jobData.benefits,
-          jobData.skills,
-          jobData.status
-        ]
-        
-        const result = await client.query(insertQuery, values)
-        newJob = result.rows[0]
-        console.log('✅ Job created successfully with raw SQL:', newJob)
-      } finally {
-        client.release()
+        case 'entry-level': return 'entry_level'
+        case 'mid-level': return 'mid_level'
+        case 'senior-level': return 'senior_level'
+        default: return 'entry_level'
       }
     }
 
+    const mapWorkArrangement = (arrangement: string) => {
+      switch (arrangement) {
+        case 'onsite': return 'onsite'
+        case 'remote': return 'remote'
+        case 'hybrid': return 'hybrid'
+        default: return 'onsite'
+      }
+    }
+
+    const mapPriority = (priority: string) => {
+      switch (priority) {
+        case 'low': return 'low'
+        case 'medium': return 'medium'
+        case 'high': return 'high'
+        case 'urgent': return 'urgent'
+        default: return 'medium'
+      }
+    }
+
+    const mapShift = (shift: string) => {
+      switch (shift) {
+        case 'day': return 'day'
+        case 'night': return 'night'
+        case 'both': return 'both'
+        default: return 'day'
+      }
+    }
+
+    // Prepare job data for insertion
+    const jobData = {
+      agency_client_id: agencyClientId,
+      posted_by: userId,
+      title: body.job_title,
+      description: body.job_description || '',
+      requirements: Array.isArray(body.requirements) ? body.requirements : [],
+      responsibilities: Array.isArray(body.responsibilities) ? body.responsibilities : [],
+      benefits: Array.isArray(body.benefits) ? body.benefits : [],
+      industry: body.industry || null,
+      department: body.department || null,
+      work_type: body.work_type || 'full_time',
+      work_arrangement: mapWorkArrangement(body.work_arrangement),
+      experience_level: mapExperienceLevel(body.experience_level),
+      salary_min: body.salary_min || null,
+      salary_max: body.salary_max || null,
+      currency: body.currency || 'PHP',
+      salary_type: body.salary_type || 'monthly',
+      shift: mapShift(body.shift),
+      priority: mapPriority(body.priority),
+      application_deadline: body.application_deadline || null,
+      status: body.status || 'active',
+    }
+
+    // Create job in Supabase
+    const { data: newJob, error: createError } = await supabaseAdmin
+      .from('jobs')
+      .insert(jobData)
+      .select()
+      .single()
+
+    if (createError) {
+      console.error('Error creating job:', createError)
+      return NextResponse.json({ 
+        error: 'Failed to create job',
+        details: createError.message
+      }, { status: 500 })
+    }
+
+    console.log('✅ Job created successfully:', newJob.id)
+
     return NextResponse.json({ 
-      success: true, 
-      job: newJob 
-    })
+      success: true,
+      job: {
+        id: newJob.id,
+        title: newJob.title,
+        status: newJob.status,
+      }
+    }, { status: 201 })
   } catch (error) {
-    console.error('❌ Error creating job:', error)
-    console.error('❌ Error details:', {
-      message: error instanceof Error ? error.message : 'Unknown error',
-      stack: error instanceof Error ? error.stack : undefined,
-      name: error instanceof Error ? error.name : 'UnknownError'
-    })
-    
-    // Return more specific error message
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred'
+    console.error('Error creating job:', error)
     return NextResponse.json({ 
-      error: `Failed to create job: ${errorMessage}` 
+      error: 'Failed to create job',
+      details: error instanceof Error ? error.message : 'Unknown error'
     }, { status: 500 })
   }
 }

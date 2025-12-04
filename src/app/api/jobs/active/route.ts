@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import pool from '@/lib/database'
+import { getActiveJobs } from '@/lib/db/jobs'
+import { supabaseAdmin } from '@/lib/supabase/admin'
 
 function capitalize(s: string): string { return !s ? s : s.charAt(0).toUpperCase() + s.slice(1) }
 
@@ -14,31 +15,54 @@ function formatSalary(currency: string, min: number | null, max: number | null, 
 
 export async function GET(_request: NextRequest) {
   try {
-    // Fetch active jobs from job_requests
-    const jobRequestsRes = await pool.query(`
-      SELECT jr.*, m.company AS company_name, 'job_request' as source
-      FROM job_requests jr
-      LEFT JOIN members m ON m.company_id = jr.company_id
-      WHERE jr.status = 'active'
-      ORDER BY jr.created_at DESC
-    `)
+    // Fetch active jobs from Supabase
+    const jobs = await getActiveJobs()
 
-    // Recruiter jobs removed - table dropped
-    const recruiterJobsRes = { rows: [] }
+    // Get company names for each job
+    const agencyClientIds = [...new Set(jobs.map(j => j.agency_client_id))]
+    
+    const { data: agencyClients } = await supabaseAdmin
+      .from('agency_clients')
+      .select(`
+        id,
+        company:companies!inner(
+          name
+        )
+      `)
+      .in('id', agencyClientIds)
 
-    // Process job_requests
-    const jobRequests = await Promise.all(jobRequestsRes.rows.map(async (row: any) => {
-      const apps = await pool.query('SELECT COUNT(*)::int AS cnt FROM applications WHERE job_id = $1', [row.id])
-      const realApplicants = apps.rows?.[0]?.cnt ?? 0
+    const companyMap = new Map()
+    agencyClients?.forEach(ac => {
+      if (ac.company) {
+        companyMap.set(ac.id, ac.company.name)
+      }
+    })
+
+    // Process jobs
+    const processedJobs = await Promise.all(jobs.map(async (job) => {
+      // Get applicant count from Supabase
+      const { count } = await supabaseAdmin
+        .from('job_applications')
+        .select('*', { count: 'exact', head: true })
+        .eq('job_id', job.id)
+
+      const realApplicants = count || job.applicants_count || 0
       const employmentType: string[] = []
-      if (row.work_type) employmentType.push(capitalize(String(row.work_type)))
-      if (row.experience_level) employmentType.push(capitalize(String(row.experience_level)))
-      const salary = formatSalary(String(row.currency || 'PHP'), row.salary_min != null ? Number(row.salary_min) : null, row.salary_max != null ? Number(row.salary_max) : null, String(row.salary_type || 'monthly'))
-      const createdAt = row.created_at ? new Date(row.created_at) : new Date()
+      if (job.work_type) employmentType.push(capitalize(String(job.work_type)))
+      if (job.experience_level) employmentType.push(capitalize(String(job.experience_level)))
+      
+      const salary = formatSalary(
+        String(job.currency || 'PHP'),
+        job.salary_min,
+        job.salary_max,
+        String(job.salary_type || 'monthly')
+      )
+      
+      const createdAt = job.created_at ? new Date(job.created_at) : new Date()
       const ms = Date.now() - createdAt.getTime()
       const postedDays = Math.max(0, Math.floor(ms / (1000 * 60 * 60 * 24)))
-      const locationType = String(row.work_arrangement || 'onsite')
-      const priorityFromDb = String(row.priority ?? '').toLowerCase()
+      const locationType = String(job.work_arrangement || 'onsite')
+      const priorityFromDb = String(job.priority ?? '').toLowerCase()
       const priority: 'low' | 'medium' | 'high' | 'urgent' =
         ['low', 'medium', 'high', 'urgent'].includes(priorityFromDb)
           ? (priorityFromDb as any)
@@ -49,35 +73,30 @@ export async function GET(_request: NextRequest) {
             })()
 
       return {
-        id: `job_request_${row.id}`,
-        company: 'ShoreAgents',
-        companyLogo: row.company_logo || '🏢',
-        title: row.job_title || 'Untitled Role',
-        location: row.location || row['location'] || '',
+        id: job.id,
+        company: companyMap.get(job.agency_client_id) || 'Unknown Company',
+        companyLogo: '🏢',
+        title: job.title,
+        location: '', // Location is in profile, not job
         locationType: locationType === 'onsite' ? 'on-site' : locationType,
         salary,
         employmentType,
         postedDays,
         applicants: realApplicants,
-        status: 'hiring',
+        status: job.status,
         priority,
-        application_deadline: row.application_deadline,
-        experience_level: row.experience_level,
-        work_arrangement: row.work_arrangement,
-        shift: row.shift,
-        industry: row.industry,
-        department: row.department,
+        application_deadline: job.application_deadline,
+        experience_level: job.experience_level,
+        work_arrangement: job.work_arrangement,
+        shift: job.shift,
+        industry: job.industry,
+        department: job.department,
       }
     }))
 
-    // Recruiter jobs removed - table dropped
-    const recruiterJobs: any[] = []
-
-    // Combine all jobs
-    const allJobs = [...jobRequests, ...recruiterJobs]
-
-    return NextResponse.json({ jobs: allJobs })
+    return NextResponse.json({ jobs: processedJobs })
   } catch (e) {
+    console.error('Error fetching active jobs:', e)
     return NextResponse.json({ error: 'Failed to fetch active jobs' }, { status: 500 })
   }
 }

@@ -1,0 +1,747 @@
+{
+  "timestamp": "2025-12-04T07:26:41.203Z",
+  "total": 170,
+  "needsMigration": 114,
+  "alreadyMigrated": 14,
+  "mixed": 8,
+  "routesNeedingMigration": [
+    {
+      "path": "src/app/api/admin/active-jobs/route.ts",
+      "issues": [
+        "Uses Railway database",
+        "Direct SQL queries need Supabase migration"
+      ]
+    },
+    {
+      "path": "src/app/api/admin/all-recent-activity/route.ts",
+      "issues": [
+        "Uses Railway database"
+      ]
+    },
+    {
+      "path": "src/app/api/admin/analysis/[id]/route.ts",
+      "issues": [
+        "Uses Railway database",
+        "Direct SQL queries need Supabase migration"
+      ]
+    },
+    {
+      "path": "src/app/api/admin/analysis/route.ts",
+      "issues": [
+        "Uses Railway database",
+        "Direct SQL queries need Supabase migration"
+      ]
+    },
+    {
+      "path": "src/app/api/admin/applicants/route.ts",
+      "issues": [
+        "Uses Railway database",
+        "Direct SQL queries need Supabase migration"
+      ]
+    },
+    {
+      "path": "src/app/api/admin/application-trends/route.ts",
+      "issues": [
+        "Uses Railway database"
+      ]
+    },
+    {
+      "path": "src/app/api/admin/bpoc-cultural-results/[id]/route.ts",
+      "issues": [
+        "Uses Railway database",
+        "Direct SQL queries need Supabase migration"
+      ]
+    },
+    {
+      "path": "src/app/api/admin/bpoc-cultural-results/route.ts",
+      "issues": [
+        "Uses Railway database",
+        "Direct SQL queries need Supabase migration"
+      ]
+    },
+    {
+      "path": "src/app/api/admin/bpoc-cultural-stats/route.ts",
+      "issues": [
+        "Uses Railway database"
+      ]
+    },
+    {
+      "path": "src/app/api/admin/check-status/route.ts",
+      "issues": [
+        "Uses Railway database",
+        "Direct SQL queries need Supabase migration"
+      ]
+    },
+    {
+      "path": "src/app/api/admin/dashboard-stats/route.ts",
+      "issues": [
+        "Uses Railway database",
+        "Direct SQL queries need Supabase migration"
+      ]
+    },
+    {
+      "path": "src/app/api/admin/disc-personality-stats/[id]/route.ts",
+      "issues": [
+        "Uses Railway database",
+        "Direct SQL queries need Supabase migration"
+      ]
+    },
+    {
+      "path": "src/app/api/admin/disc-personality-stats/route.ts",
+      "issues": [
+        "Uses Railway database",
+        "Direct SQL queries need Supabase migration"
+      ]
+    },
+    {
+      "path": "src/app/api/admin/game-performance/route.ts",
+      "issues": [
+        "Uses Railway database"
+      ]
+    },
+    {
+      "path": "src/app/api/admin/jobs/[id]/route.ts",
+      "issues": [
+        "Uses Railway database",
+        "Direct SQL queries need Supabase migration"
+      ]
+    },
+    {
+      "path": "src/app/api/admin/jobs/improve/route.ts",
+      "issues": [
+        "Uses Railway database",
+        "Direct SQL queries need Supabase migration"
+      ]
+    },
+    {
+      "path": "src/app/api/admin/jobs/process/route.ts",
+      "issues": [
+        "Uses Railway database",
+        "Direct SQL queries need Supabase migration"
+      ]
+    },
+    {
+      "path": "src/app/api/admin/jobs/route.ts",
+      "issues": [
+        "Uses Railway database",
+        "Direct SQL queries need Supabase migration"
+      ]
+    },
+    {
+      "path": "src/app/api/admin/leaderboards/route.ts",
+      "issues": [
+        "Uses Railway database",
+        "Direct SQL queries need Supabase migration"
+      ]
+    },
+    {
+      "path": "src/app/api/admin/log-action/route.ts",
+      "issues": [
+        "Uses Railway database",
+        "Direct SQL queries need Supabase migration"
+      ]
+    },
+    {
+      "path": "src/app/api/admin/members/route.ts",
+      "issues": [
+        "Uses Railway database",
+        "Direct SQL queries need Supabase migration"
+      ]
+    },
+    {
+      "path": "src/app/api/admin/processed-jobs/[id]/route.ts",
+      "issues": [
+        "Uses Railway database",
+        "Direct SQL queries need Supabase migration"
+      ]
+    },
+    {
+      "path": "src/app/api/admin/processed-jobs/route.ts",
+      "issues": [
+        "Uses Railway database",
+        "Direct SQL queries need Supabase migration"
+      ]
+    },
+    {
+      "path": "src/app/api/admin/recent-activity/route.ts",
+      "issues": [
+        "Uses Railway database"
+      ]
+    },
+    {
+      "path": "src/app/api/admin/recruitment/interviews/[id]/cancel/route.ts",
+      "issues": [
+        "Uses Railway database"
+      ]
+    },
+    {
+      "path": "src/app/api/admin/recruitment/interviews/confirm-acceptance/route.ts",
+      "issues": [
+        "Uses Railway database"
+      ]
+    },
+    {
+      "path": "src/app/api/admin/recruitment/interviews/hire/route.ts",
+      "issues": [
+        "Uses Railway database"
+      ]
+    },
+    {
+      "path": "src/app/api/admin/recruitment/interviews/mark-declined/route.ts",
+      "issues": [
+        "Uses Railway database"
+      ]
+    },
+    {
+      "path": "src/app/api/admin/resumes/[id]/preview/route.ts",
+      "issues": [
+        "Uses Railway database",
+        "Direct SQL queries need Supabase migration"
+      ]
+    },
+    {
+      "path": "src/app/api/admin/resumes/[id]/route.ts",
+      "issues": [
+        "Uses Railway database",
+        "Direct SQL queries need Supabase migration"
+      ]
+    },
+    {
+      "path": "src/app/api/admin/resumes/route.ts",
+      "issues": [
+        "Uses Railway database",
+        "Direct SQL queries need Supabase migration"
+      ]
+    },
+    {
+      "path": "src/app/api/admin/test-activity/route.ts",
+      "issues": [
+        "Uses Railway database"
+      ]
+    },
+    {
+      "path": "src/app/api/admin/test-data/route.ts",
+      "issues": [
+        "Uses Railway database",
+        "Direct SQL queries need Supabase migration"
+      ]
+    },
+    {
+      "path": "src/app/api/admin/test-db/route.ts",
+      "issues": [
+        "Uses Railway database",
+        "Direct SQL queries need Supabase migration"
+      ]
+    },
+    {
+      "path": "src/app/api/admin/test-game-data/route.ts",
+      "issues": [
+        "Uses Railway database"
+      ]
+    },
+    {
+      "path": "src/app/api/admin/total-applicants/route.ts",
+      "issues": [
+        "Uses Railway database",
+        "Direct SQL queries need Supabase migration"
+      ]
+    },
+    {
+      "path": "src/app/api/admin/total-resumes/route.ts",
+      "issues": [
+        "Uses Railway database",
+        "Direct SQL queries need Supabase migration"
+      ]
+    },
+    {
+      "path": "src/app/api/admin/total-users/route.ts",
+      "issues": [
+        "Uses Railway database",
+        "Direct SQL queries need Supabase migration"
+      ]
+    },
+    {
+      "path": "src/app/api/admin/typing-hero-stats/[id]/route.ts",
+      "issues": [
+        "Uses Railway database",
+        "Direct SQL queries need Supabase migration"
+      ]
+    },
+    {
+      "path": "src/app/api/admin/typing-hero-stats/route.ts",
+      "issues": [
+        "Uses Railway database",
+        "Direct SQL queries need Supabase migration"
+      ]
+    },
+    {
+      "path": "src/app/api/admin/ultimate-stats/[id]/route.ts",
+      "issues": [
+        "Uses Railway database",
+        "Direct SQL queries need Supabase migration"
+      ]
+    },
+    {
+      "path": "src/app/api/admin/ultimate-stats/route.ts",
+      "issues": [
+        "Uses Railway database",
+        "Direct SQL queries need Supabase migration"
+      ]
+    },
+    {
+      "path": "src/app/api/admin/user-registration-trends/route.ts",
+      "issues": [
+        "Uses Railway database"
+      ]
+    },
+    {
+      "path": "src/app/api/admin/user-work-status/route.ts",
+      "issues": [
+        "Uses Railway database",
+        "Direct SQL queries need Supabase migration"
+      ]
+    },
+    {
+      "path": "src/app/api/admin/users/route.ts",
+      "issues": [
+        "Uses Railway database",
+        "Direct SQL queries need Supabase migration"
+      ]
+    },
+    {
+      "path": "src/app/api/analysis-results/public/[userId]/route.ts",
+      "issues": [
+        "Uses Railway database",
+        "Direct SQL queries need Supabase migration"
+      ]
+    },
+    {
+      "path": "src/app/api/analyze-resume/route.ts",
+      "issues": [
+        "Uses Railway database"
+      ]
+    },
+    {
+      "path": "src/app/api/client/interviews/cancel/route.ts",
+      "issues": [
+        "Uses Railway database"
+      ]
+    },
+    {
+      "path": "src/app/api/client/interviews/hire-request/route.ts",
+      "issues": [
+        "Uses Railway database"
+      ]
+    },
+    {
+      "path": "src/app/api/client/interviews/reschedule/route.ts",
+      "issues": [
+        "Uses Railway database"
+      ]
+    },
+    {
+      "path": "src/app/api/client/interviews/route.ts",
+      "issues": [
+        "Uses Railway database"
+      ]
+    },
+    {
+      "path": "src/app/api/debug-user-sync/route.ts",
+      "issues": [
+        "Uses Railway database"
+      ]
+    },
+    {
+      "path": "src/app/api/games/bpoc-cultural/analyze/route.ts",
+      "issues": [
+        "Uses Railway database",
+        "Direct SQL queries need Supabase migration"
+      ]
+    },
+    {
+      "path": "src/app/api/games/bpoc-cultural/public/[userId]/route.ts",
+      "issues": [
+        "Uses Railway database"
+      ]
+    },
+    {
+      "path": "src/app/api/games/bpoc-cultural/session/route.ts",
+      "issues": [
+        "Uses Railway database",
+        "Direct SQL queries need Supabase migration"
+      ]
+    },
+    {
+      "path": "src/app/api/games/bpoc-cultural/stats/route.ts",
+      "issues": [
+        "Uses Railway database"
+      ]
+    },
+    {
+      "path": "src/app/api/games/disc/personalized/route.ts",
+      "issues": [
+        "Uses Railway database",
+        "Direct SQL queries need Supabase migration"
+      ]
+    },
+    {
+      "path": "src/app/api/games/disc/session/route.ts",
+      "issues": [
+        "Uses Railway database"
+      ]
+    },
+    {
+      "path": "src/app/api/games/disc-personality/public/[userId]/route.ts",
+      "issues": [
+        "Uses Railway database"
+      ]
+    },
+    {
+      "path": "src/app/api/games/disc-personality/session/route.ts",
+      "issues": [
+        "Uses Railway database"
+      ]
+    },
+    {
+      "path": "src/app/api/games/typing-hero/load-user-story/route.ts",
+      "issues": [
+        "Uses Railway database"
+      ]
+    },
+    {
+      "path": "src/app/api/games/typing-hero/public/[userId]/route.ts",
+      "issues": [
+        "Uses Railway database"
+      ]
+    },
+    {
+      "path": "src/app/api/games/typing-hero/session/route.ts",
+      "issues": [
+        "Uses Railway database"
+      ]
+    },
+    {
+      "path": "src/app/api/games/typing-hero backup/public/[userId]/route.ts",
+      "issues": [
+        "Uses Railway database"
+      ]
+    },
+    {
+      "path": "src/app/api/games/typing-hero backup/session/route.ts",
+      "issues": [
+        "Uses Railway database"
+      ]
+    },
+    {
+      "path": "src/app/api/games/ultimate/public/[userId]/route.ts",
+      "issues": [
+        "Uses Railway database"
+      ]
+    },
+    {
+      "path": "src/app/api/games/ultimate/session/route.ts",
+      "issues": [
+        "Uses Railway database"
+      ]
+    },
+    {
+      "path": "src/app/api/get-saved-resume/[slug]/route.ts",
+      "issues": [
+        "Uses Railway database"
+      ]
+    },
+    {
+      "path": "src/app/api/get-user-resume-slug/route.ts",
+      "issues": [
+        "Uses Railway database",
+        "Direct SQL queries need Supabase migration"
+      ]
+    },
+    {
+      "path": "src/app/api/jobs/active/[id]/route.ts",
+      "issues": [
+        "Uses Railway database",
+        "Direct SQL queries need Supabase migration"
+      ]
+    },
+    {
+      "path": "src/app/api/jobs/active/route.ts",
+      "issues": [
+        "Uses Railway database",
+        "Direct SQL queries need Supabase migration"
+      ]
+    },
+    {
+      "path": "src/app/api/jobs/batch-match/route.ts",
+      "issues": [
+        "Uses Railway database"
+      ]
+    },
+    {
+      "path": "src/app/api/jobs/clear-cache/route.ts",
+      "issues": [
+        "Uses Railway database"
+      ]
+    },
+    {
+      "path": "src/app/api/jobs/combined/[id]/route.ts",
+      "issues": [
+        "Uses Railway database",
+        "Direct SQL queries need Supabase migration"
+      ]
+    },
+    {
+      "path": "src/app/api/jobs/combined/route.ts",
+      "issues": [
+        "Uses Railway database",
+        "Direct SQL queries need Supabase migration"
+      ]
+    },
+    {
+      "path": "src/app/api/jobs/match/route.ts",
+      "issues": [
+        "Uses Railway database"
+      ]
+    },
+    {
+      "path": "src/app/api/leaderboards/populate/route.ts",
+      "issues": [
+        "Uses Railway database",
+        "Direct SQL queries need Supabase migration"
+      ]
+    },
+    {
+      "path": "src/app/api/leaderboards/recompute/route.ts",
+      "issues": [
+        "Uses Railway database",
+        "Direct SQL queries need Supabase migration"
+      ]
+    },
+    {
+      "path": "src/app/api/leaderboards/route.ts",
+      "issues": [
+        "Uses Railway database",
+        "Direct SQL queries need Supabase migration"
+      ]
+    },
+    {
+      "path": "src/app/api/leaderboards/status/route.ts",
+      "issues": [
+        "Uses Railway database",
+        "Direct SQL queries need Supabase migration"
+      ]
+    },
+    {
+      "path": "src/app/api/leaderboards/user/[id]/route.ts",
+      "issues": [
+        "Uses Railway database",
+        "Direct SQL queries need Supabase migration"
+      ]
+    },
+    {
+      "path": "src/app/api/migrate-resume-slugs/route.ts",
+      "issues": [
+        "Uses Railway database",
+        "Direct SQL queries need Supabase migration"
+      ]
+    },
+    {
+      "path": "src/app/api/og/bpoc-disc/route.tsx",
+      "issues": [
+        "Uses Railway database"
+      ]
+    },
+    {
+      "path": "src/app/api/og/disc-results/route.tsx",
+      "issues": [
+        "Uses Railway database"
+      ]
+    },
+    {
+      "path": "src/app/api/og/job/route.tsx",
+      "issues": [
+        "Uses Railway database"
+      ]
+    },
+    {
+      "path": "src/app/api/og/resume/route.tsx",
+      "issues": [
+        "Uses Railway database"
+      ]
+    },
+    {
+      "path": "src/app/api/og/route.tsx",
+      "issues": [
+        "Uses Railway database"
+      ]
+    },
+    {
+      "path": "src/app/api/og/typing-hero/route.tsx",
+      "issues": [
+        "Uses Railway database"
+      ]
+    },
+    {
+      "path": "src/app/api/public/ai-analysis-results/route.ts",
+      "issues": [
+        "Uses Railway database"
+      ]
+    },
+    {
+      "path": "src/app/api/public/applications/route.ts",
+      "issues": [
+        "Uses Railway database"
+      ]
+    },
+    {
+      "path": "src/app/api/public/jobs/route.ts",
+      "issues": [
+        "Uses Railway database"
+      ]
+    },
+    {
+      "path": "src/app/api/public/resumes-generated/route.ts",
+      "issues": [
+        "Uses Railway database"
+      ]
+    },
+    {
+      "path": "src/app/api/public/user-by-slug/route.ts",
+      "issues": [
+        "Uses Railway database"
+      ]
+    },
+    {
+      "path": "src/app/api/public/user-data/route.ts",
+      "issues": [
+        "Uses Railway database"
+      ]
+    },
+    {
+      "path": "src/app/api/public/user-work-status/route.ts",
+      "issues": [
+        "Uses Railway database",
+        "Direct SQL queries need Supabase migration"
+      ]
+    },
+    {
+      "path": "src/app/api/public/users/exists/route.ts",
+      "issues": [
+        "Uses Railway database"
+      ]
+    },
+    {
+      "path": "src/app/api/public/users/route.ts",
+      "issues": [
+        "Uses Railway database"
+      ]
+    },
+    {
+      "path": "src/app/api/recruiter/companies/route.ts",
+      "issues": [
+        "Uses Railway database",
+        "Direct SQL queries need Supabase migration"
+      ]
+    },
+    {
+      "path": "src/app/api/recruiter/recent-activity/route.ts",
+      "issues": [
+        "Uses Railway database"
+      ]
+    },
+    {
+      "path": "src/app/api/recruiter/recent-applications/route.ts",
+      "issues": [
+        "Uses Railway database"
+      ]
+    },
+    {
+      "path": "src/app/api/recruiter/signup/route.ts",
+      "issues": [
+        "Uses Railway database",
+        "Direct SQL queries need Supabase migration"
+      ]
+    },
+    {
+      "path": "src/app/api/recruiter/test-applicants/route.ts",
+      "issues": [
+        "Uses Railway database"
+      ]
+    },
+    {
+      "path": "src/app/api/save-generated-resume/route.ts",
+      "issues": [
+        "Uses Railway database"
+      ]
+    },
+    {
+      "path": "src/app/api/save-resume-to-profile/route.ts",
+      "issues": [
+        "Uses Railway database"
+      ]
+    },
+    {
+      "path": "src/app/api/talent-search/route.ts",
+      "issues": [
+        "Uses Railway database",
+        "Direct SQL queries need Supabase migration"
+      ]
+    },
+    {
+      "path": "src/app/api/test-user-profile/route.ts",
+      "issues": [
+        "Uses Railway database"
+      ]
+    },
+    {
+      "path": "src/app/api/user/ai-analysis-score/route.ts",
+      "issues": [
+        "Uses Railway database"
+      ]
+    },
+    {
+      "path": "src/app/api/user/analysis-results/route.ts",
+      "issues": [
+        "Uses Railway database"
+      ]
+    },
+    {
+      "path": "src/app/api/user/applications/route.ts",
+      "issues": [
+        "Uses Railway database"
+      ]
+    },
+    {
+      "path": "src/app/api/user/resumes-generated/route.ts",
+      "issues": [
+        "Uses Railway database"
+      ]
+    },
+    {
+      "path": "src/app/api/user/saved-resume/[slug]/route.ts",
+      "issues": [
+        "Uses Railway database"
+      ]
+    },
+    {
+      "path": "src/app/api/user/saved-resume-data/route.ts",
+      "issues": [
+        "Uses Railway database"
+      ]
+    },
+    {
+      "path": "src/app/api/users/[id]/profile/route.ts",
+      "issues": [
+        "Uses Railway database",
+        "Direct SQL queries need Supabase migration"
+      ]
+    },
+    {
+      "path": "src/app/api/users/[id]/resume/route.ts",
+      "issues": [
+        "Uses Railway database",
+        "Direct SQL queries need Supabase migration"
+      ]
+    }
+  ]
+}

@@ -47,18 +47,27 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Fetch user data for personalization
+    // Fetch user data for personalization from Supabase
     let user = null
     if (userId) {
       try {
-        const userQuery = `
-          SELECT id, email, first_name, last_name, location, position, bio, birthday
-          FROM users 
-          WHERE id = $1
-        `
-        const userResult = await pool.query(userQuery, [userId])
-        if (userResult.rows.length > 0) {
-          user = userResult.rows[0]
+        const { getCandidateById } = await import('@/lib/db/candidates')
+        const { getProfileByCandidate } = await import('@/lib/db/profiles')
+        
+        const candidate = await getCandidateById(userId)
+        const profile = await getProfileByCandidate(userId)
+        
+        if (candidate) {
+          user = {
+            id: candidate.id,
+            email: candidate.email,
+            first_name: candidate.first_name,
+            last_name: candidate.last_name,
+            location: profile?.location || null,
+            position: profile?.position || null,
+            bio: profile?.bio || null,
+            birthday: profile?.birthday || null,
+          }
         }
       } catch (error) {
         console.error('Error fetching user data:', error)

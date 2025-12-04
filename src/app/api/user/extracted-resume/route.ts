@@ -1,10 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { Pool } from 'pg'
-
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-  ssl: { rejectUnauthorized: false }
-})
+import { getResumeByCandidateId, deleteResume } from '@/lib/db/resumes'
+import { getCandidateById } from '@/lib/db/candidates'
 
 export async function GET(request: NextRequest) {
   try {
@@ -13,23 +9,29 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const client = await pool.connect()
-    try {
-      const result = await client.query(
-        'SELECT resume_data FROM resumes_extracted WHERE user_id = $1 ORDER BY updated_at DESC LIMIT 1',
-        [userId]
-      )
-
-      if (result.rows.length === 0) {
-        return NextResponse.json({ hasData: false })
-      }
-
-      return NextResponse.json({ hasData: true, resumeData: result.rows[0].resume_data })
-    } finally {
-      client.release()
+    // Verify candidate exists
+    const candidate = await getCandidateById(userId)
+    if (!candidate) {
+      return NextResponse.json({ error: 'User not found' }, { status: 404 })
     }
+
+    // Get resume from Supabase
+    const resume = await getResumeByCandidateId(userId)
+
+    if (!resume) {
+      return NextResponse.json({ hasData: false })
+    }
+
+    return NextResponse.json({ 
+      hasData: true, 
+      resumeData: resume.resume_data 
+    })
   } catch (err) {
-    return NextResponse.json({ error: 'Failed to load extracted resume' }, { status: 500 })
+    console.error('Error fetching extracted resume:', err)
+    return NextResponse.json({ 
+      error: 'Failed to load extracted resume',
+      details: err instanceof Error ? err.message : 'Unknown error'
+    }, { status: 500 })
   }
 }
 
@@ -41,13 +43,9 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: 'User ID not provided' }, { status: 400 })
     }
 
-    const client = await pool.connect()
-    try {
-      await client.query('DELETE FROM resumes_extracted WHERE user_id = $1', [userId])
-      return NextResponse.json({ success: true })
-    } finally {
-      client.release()
-    }
+    // Delete resume from Supabase
+    await deleteResume(userId)
+    return NextResponse.json({ success: true })
   } catch (error) {
     console.error('❌ Error deleting extracted resume:', error)
     return NextResponse.json(

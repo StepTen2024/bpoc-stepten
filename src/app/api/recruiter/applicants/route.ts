@@ -1,164 +1,131 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
-import { supabase } from '@/lib/supabase';
+import { NextRequest, NextResponse } from 'next/server'
+import { createClient } from '@/lib/supabase/server'
+import { supabaseAdmin } from '@/lib/supabase/admin'
+import { getJobById } from '@/lib/db/jobs'
+import { getApplicationsByCandidate } from '@/lib/db/applications'
 
 export async function GET(request: NextRequest) {
   try {
-    console.log('🔍 API called: GET /api/recruiter/applicants');
+    console.log('🔍 API called: GET /api/recruiter/applicants')
     
-    // Extract user ID from Authorization header or x-user-id header
-    const authHeader = request.headers.get('Authorization');
-    const xUserId = request.headers.get('x-user-id');
-    let recruiterId: string | null = null;
+    // Get recruiter ID from Supabase session
+    const supabase = await createClient()
+    const { data: { user }, error: authError } = await supabase.auth.getUser()
 
-    if (authHeader && authHeader.startsWith('Bearer ')) {
-      const token = authHeader.substring(7);
-      try {
-        const { data: { user }, error } = await supabase.auth.getUser(token);
-        if (error || !user) {
-          console.log('❌ Invalid token:', error?.message);
-          return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
-        }
-        recruiterId = user.id;
-        console.log('🔍 Extracted user ID from token:', recruiterId);
-      } catch (tokenError) {
-        console.log('❌ Token validation error:', tokenError);
-        return NextResponse.json({ error: 'Token validation failed' }, { status: 401 });
+    if (authError || !user) {
+      // Fallback to x-user-id header
+      const xUserId = request.headers.get('x-user-id')
+      if (!xUserId) {
+        console.log('❌ No recruiter ID found')
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
       }
-    } else if (xUserId) {
-      recruiterId = xUserId;
-      console.log('🔍 Using x-user-id header:', recruiterId);
-    }
-
-    if (!recruiterId) {
-      console.log('❌ No recruiter ID found');
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      var recruiterId = xUserId
+    } else {
+      var recruiterId = user.id
     }
 
     // Get jobId from query parameters
-    const { searchParams } = new URL(request.url);
-    const jobId = searchParams.get('jobId');
+    const { searchParams } = new URL(request.url)
+    const jobId = searchParams.get('jobId')
     
-    console.log('🔍 Fetching applicants for job:', jobId);
-    console.log('🔍 Recruiter ID:', recruiterId);
+    console.log('🔍 Fetching applicants for job:', jobId)
+    console.log('🔍 Recruiter ID:', recruiterId)
 
     if (!jobId) {
-      return NextResponse.json({ error: 'Job ID is required' }, { status: 400 });
+      return NextResponse.json({ error: 'Job ID is required' }, { status: 400 })
     }
 
-    // First, verify that the job belongs to this recruiter
-    const job = await (prisma as any).recruiterJob.findFirst({
-      where: {
-        id: jobId,
-        recruiter_id: recruiterId
-      },
-      select: {
-        id: true,
-        job_title: true
-      }
-    });
-
-    if (!job) {
-      console.log('❌ Job not found or does not belong to recruiter');
-      return NextResponse.json({ error: 'Job not found or access denied' }, { status: 404 });
+    // Verify that the job belongs to this recruiter
+    const job = await getJobById(jobId)
+    if (!job || job.posted_by !== recruiterId) {
+      console.log('❌ Job not found or does not belong to recruiter')
+      return NextResponse.json({ error: 'Job not found or access denied' }, { status: 404 })
     }
 
-    console.log('✅ Job found:', job.job_title);
+    console.log('✅ Job found:', job.title)
 
-    // Fetch applicants for this job
-    const applicants = await (prisma as any).recruiterApplication.findMany({
-      where: {
-        job_id: jobId
-      },
-      include: {
-        user: {
-          select: {
-            id: true,
-            full_name: true,
-            email: true,
-            username: true,
-            avatar_url: true,
-            phone: true,
-            location: true,
-            bio: true,
-            position: true,
-            company: true
-          }
-        },
-        job: {
-          select: {
-            id: true,
-            job_title: true
-            // DISABLED: company_id removed - companies table is being deleted
-            // company_id: true
-          }
-        }
-      },
-      orderBy: {
-        created_at: 'desc'
-      }
-    });
+    // Fetch applicants for this job from Supabase
+    const { data: applications, error: applicationsError } = await supabaseAdmin
+      .from('job_applications')
+      .select(`
+        id,
+        candidate_id,
+        status,
+        created_at,
+        resume_id,
+        candidate:candidates!inner(
+          id,
+          email,
+          first_name,
+          last_name,
+          full_name,
+          username,
+          avatar_url,
+          phone
+        )
+      `)
+      .eq('job_id', jobId)
+      .order('created_at', { ascending: false })
 
-    console.log('✅ Applicants found:', applicants.length);
-    console.log('🔍 Raw applicants data:', JSON.stringify(applicants, null, 2));
-    console.log('🔍 First applicant data:', applicants[0] ? {
-      id: applicants[0].id,
-      user: applicants[0].user,
-      job: applicants[0].job
-    } : 'No applicants');
+    if (applicationsError) {
+      console.error('Error fetching applications:', applicationsError)
+      return NextResponse.json({ error: 'Failed to fetch applications' }, { status: 500 })
+    }
 
-    // Transform the data for the frontend
-    const transformedApplicants = applicants.map((applicant: any) => {
-      console.log('🔍 Processing applicant:', applicant.id, 'User data:', applicant.user);
-      
+    // Get profile data for each candidate
+    const applicantsWithProfiles = await Promise.all((applications || []).map(async (application: any) => {
+      const { data: profile } = await supabaseAdmin
+        .from('candidate_profiles')
+        .select('bio, position, location')
+        .eq('candidate_id', application.candidate_id)
+        .single()
+
       return {
-        id: applicant.id,
-        userId: applicant.user?.id || 'unknown',
-        // Frontend expects these field names
-        fullName: applicant.user?.full_name || applicant.user?.email || 'Unknown User',
-        firstName: applicant.user?.full_name?.split(' ')[0] || applicant.user?.email || 'Unknown',
-        email: applicant.user?.email || 'no-email@example.com',
-        username: applicant.user?.username || 'no-username', // Use actual username from users table
-        avatar: applicant.user?.avatar_url || null,
-        phone: applicant.user?.phone || null,
-        location: applicant.user?.location || null,
-        bio: applicant.user?.bio || null,
-        position: applicant.user?.position || null,
-        company: applicant.user?.company || null,
-        jobTitle: applicant.job?.job_title || 'Unknown Job',
-        // DISABLED: company_id removed - use user.company as fallback
-        jobCompany: applicant.user?.company || 'Unknown Company',
-        status: applicant.status || 'submitted',
-        appliedAt: applicant.created_at,
-        resumeId: applicant.resume_id,
-        resumeSlug: applicant.resume_slug,
-        coverLetter: applicant.cover_letter || null,
-        notes: applicant.notes || null,
-        // Keep original field names for backward compatibility
-        userName: applicant.user?.full_name || applicant.user?.email || 'Unknown User',
-        userEmail: applicant.user?.email || 'no-email@example.com',
-        userAvatar: applicant.user?.avatar_url || null
-      };
-    });
+        id: application.id,
+        userId: application.candidate_id,
+        fullName: application.candidate?.full_name || `${application.candidate?.first_name} ${application.candidate?.last_name}`.trim() || 'Unknown User',
+        firstName: application.candidate?.first_name || 'Unknown',
+        email: application.candidate?.email || 'no-email@example.com',
+        username: application.candidate?.username || 'no-username',
+        avatar: application.candidate?.avatar_url || null,
+        phone: application.candidate?.phone || null,
+        location: profile?.location || null,
+        bio: profile?.bio || null,
+        position: profile?.position || null,
+        company: null, // Company is not in candidate_profiles, would need separate lookup
+        jobTitle: job.title,
+        jobCompany: job.agency_client?.company?.name || 'Unknown Company',
+        status: application.status || 'submitted',
+        appliedAt: application.created_at,
+        resumeId: application.resume_id,
+        resumeSlug: null, // Would need to fetch from candidate_resumes
+        coverLetter: null, // Not in job_applications table
+        notes: null, // Not in job_applications table
+        userName: application.candidate?.full_name || application.candidate?.email || 'Unknown User',
+        userEmail: application.candidate?.email || 'no-email@example.com',
+        userAvatar: application.candidate?.avatar_url || null
+      }
+    }))
+
+    console.log('✅ Applicants found:', applicantsWithProfiles.length)
 
     return NextResponse.json({
-      applicants: transformedApplicants,
-      total: transformedApplicants.length,
+      applicants: applicantsWithProfiles,
+      total: applicantsWithProfiles.length,
       job: {
         id: job.id,
-        title: job.job_title
+        title: job.title
       }
-    });
+    })
 
   } catch (error) {
-    console.error('❌ Error fetching applicants:', error);
+    console.error('❌ Error fetching applicants:', error)
     
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred'
     
     return NextResponse.json({ 
       error: 'Failed to fetch applicants',
       details: errorMessage
-    }, { status: 500 });
+    }, { status: 500 })
   }
 }
- 

@@ -1,10 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { Pool } from 'pg'
-
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-  ssl: { rejectUnauthorized: false }
-})
+import { getResumeByCandidateId, deleteResume } from '@/lib/db/resumes'
+import { getCandidateById } from '@/lib/db/candidates'
 
 export async function GET(request: NextRequest) {
   try {
@@ -14,43 +10,31 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'User ID not provided' }, { status: 400 })
     }
 
-    const client = await pool.connect()
-    try {
-      // Test database connection
-      await client.query('SELECT NOW()')
-      console.log('✅ Database connection successful')
+    // Verify candidate exists
+    const candidate = await getCandidateById(userId)
+    if (!candidate) {
+      return NextResponse.json({ error: 'User not found' }, { status: 404 })
+    }
 
-      // Check if user has any saved resumes
-      const result = await client.query(
-        `SELECT id, resume_slug, resume_title, created_at 
-         FROM saved_resumes 
-         WHERE user_id = $1 
-         ORDER BY created_at DESC 
-         LIMIT 1`,
-        [userId]
-      )
+    // Get resume from Supabase
+    const resume = await getResumeByCandidateId(userId)
 
-      if (result.rows.length > 0) {
-        const savedResume = result.rows[0]
-        return NextResponse.json({
-          success: true,
-          hasSavedResume: true,
-          id: savedResume.id,
-          resumeId: savedResume.id,
-          resumeSlug: savedResume.resume_slug,
-          resumeTitle: savedResume.resume_title,
-          resumeUrl: `/resume/${savedResume.resume_slug}`
-        })
-      } else {
-        return NextResponse.json({
-          success: true,
-          hasSavedResume: false,
-          resumeUrl: '/resume-builder'
-        })
-      }
-
-    } finally {
-      client.release()
+    if (resume) {
+      return NextResponse.json({
+        success: true,
+        hasSavedResume: true,
+        id: resume.id,
+        resumeId: resume.id,
+        resumeSlug: resume.slug,
+        resumeTitle: resume.title || 'Resume',
+        resumeUrl: resume.slug ? `/resume/${resume.slug}` : '/resume-builder'
+      })
+    } else {
+      return NextResponse.json({
+        success: true,
+        hasSavedResume: false,
+        resumeUrl: '/resume-builder'
+      })
     }
   } catch (error) {
     console.error('❌ Error checking saved resumes:', error)
@@ -69,13 +53,9 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: 'User ID not provided' }, { status: 400 })
     }
 
-    const client = await pool.connect()
-    try {
-      await client.query('DELETE FROM saved_resumes WHERE user_id = $1', [userId])
-      return NextResponse.json({ success: true })
-    } finally {
-      client.release()
-    }
+    // Delete resume from Supabase
+    await deleteResume(userId)
+    return NextResponse.json({ success: true })
   } catch (error) {
     console.error('❌ Error deleting saved resumes:', error)
     return NextResponse.json(

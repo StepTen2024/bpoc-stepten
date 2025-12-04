@@ -1,10 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { Pool } from 'pg'
-
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-  ssl: { rejectUnauthorized: false }
-})
+import { supabaseAdmin } from '@/lib/supabase/admin'
+import { getCandidateById } from '@/lib/db/candidates'
 
 export async function GET(request: NextRequest) {
   try {
@@ -14,44 +10,49 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'User ID not provided' }, { status: 400 })
     }
 
-    const client = await pool.connect()
-    try {
-      // Test database connection
-      await client.query('SELECT NOW()')
-      console.log('✅ Database connection successful')
+    // Verify candidate exists
+    const candidate = await getCandidateById(userId)
+    if (!candidate) {
+      return NextResponse.json({ error: 'User not found' }, { status: 404 })
+    }
 
-      // Check if user has any generated resumes
-      const result = await client.query(
-        `SELECT id, original_resume_id, generated_resume_data, template_used, generation_metadata, created_at, updated_at
-         FROM resumes_generated 
-         WHERE user_id = $1 
-         ORDER BY updated_at DESC 
-         LIMIT 1`,
-        [userId]
-      )
+    // Check if user has any generated resumes in Supabase
+    // Note: resumes_generated table may not exist in Supabase schema yet
+    // For now, return false - this can be implemented when table is added
+    const { data, error } = await supabaseAdmin
+      .from('resumes_generated')
+      .select('*')
+      .eq('candidate_id', userId)
+      .order('updated_at', { ascending: false })
+      .limit(1)
 
-      if (result.rows.length > 0) {
-        const generatedResume = result.rows[0]
-        return NextResponse.json({
-          success: true,
-          hasGeneratedResume: true,
-          id: generatedResume.id,
-          originalResumeId: generatedResume.original_resume_id,
-          generatedResumeData: generatedResume.generated_resume_data,
-          templateUsed: generatedResume.template_used,
-          generationMetadata: generatedResume.generation_metadata,
-          createdAt: generatedResume.created_at,
-          updatedAt: generatedResume.updated_at
-        })
-      } else {
-        return NextResponse.json({
-          success: true,
-          hasGeneratedResume: false
-        })
-      }
+    if (error) {
+      // Table may not exist - return false for now
+      console.log('Note: resumes_generated table may not exist:', error.message)
+      return NextResponse.json({
+        success: true,
+        hasGeneratedResume: false
+      })
+    }
 
-    } finally {
-      client.release()
+    if (data && data.length > 0) {
+      const generatedResume = data[0]
+      return NextResponse.json({
+        success: true,
+        hasGeneratedResume: true,
+        id: generatedResume.id,
+        originalResumeId: generatedResume.original_resume_id,
+        generatedResumeData: generatedResume.generated_resume_data,
+        templateUsed: generatedResume.template_used,
+        generationMetadata: generatedResume.generation_metadata,
+        createdAt: generatedResume.created_at,
+        updatedAt: generatedResume.updated_at
+      })
+    } else {
+      return NextResponse.json({
+        success: true,
+        hasGeneratedResume: false
+      })
     }
   } catch (error) {
     console.error('❌ Error checking generated resumes:', error)
@@ -70,13 +71,26 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: 'User ID not provided' }, { status: 400 })
     }
 
-    const client = await pool.connect()
-    try {
-      await client.query('DELETE FROM resumes_generated WHERE user_id = $1', [userId])
-      return NextResponse.json({ success: true })
-    } finally {
-      client.release()
+    // Verify candidate exists
+    const candidate = await getCandidateById(userId)
+    if (!candidate) {
+      return NextResponse.json({ error: 'User not found' }, { status: 404 })
     }
+
+    const { error } = await supabaseAdmin
+      .from('resumes_generated')
+      .delete()
+      .eq('candidate_id', userId)
+
+    if (error) {
+      console.error('Error deleting generated resumes:', error)
+      return NextResponse.json(
+        { error: 'Failed to delete generated resumes', details: error.message },
+        { status: 500 }
+      )
+    }
+
+    return NextResponse.json({ success: true })
   } catch (error) {
     console.error('❌ Error deleting generated resumes:', error)
     return NextResponse.json(

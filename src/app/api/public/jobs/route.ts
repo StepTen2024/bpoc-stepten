@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import pool from '@/lib/database'
+import { supabaseAdmin } from '@/lib/supabase/admin'
 
 // Very permissive CORS for public consumption (adjust later if needed)
 const CORS_HEADERS: Record<string, string> = {
@@ -26,49 +26,63 @@ export async function GET(request: NextRequest) {
 	const status = (url.searchParams.get('status') || 'active').trim()
 	const offset = (page - 1) * pageSize
 
-	const client = await pool.connect()
 	try {
-		const whereParts: string[] = []
-		const params: any[] = []
+		// Build query for Supabase
+		let query = supabaseAdmin
+			.from('jobs')
+			.select('*', { count: 'exact' })
+			.eq('status', status)
 
-		// status filter
-		params.push(status)
-		whereParts.push(`status = $${params.length}`)
-
-		// simple search on title and department
+		// Search filter
 		if (q) {
-			params.push(`%${q}%`)
-			whereParts.push(`(job_title ILIKE $${params.length} OR department ILIKE $${params.length})`)
+			query = query.or(`title.ilike.%${q}%,department.ilike.%${q}%`)
 		}
 
-		// count first
-		const countSql = `SELECT COUNT(*)::int AS total FROM job_requests ${whereParts.length ? 'WHERE ' + whereParts.join(' AND ') : ''}`
-		const countRes = await client.query(countSql, params)
-		const total = countRes.rows[0]?.total || 0
+		// Get count
+		const { count } = await query
 
-		// then page of items
-		params.push(pageSize, offset)
-		const dataSql = `
-			SELECT id, company_id, job_title, department, work_arrangement, salary_min, salary_max,
-			       currency, salary_type, experience_level, priority, shift, application_deadline,
-			       industry, work_type, status, views, applicants, created_at, updated_at
-			FROM job_requests
-			${whereParts.length ? 'WHERE ' + whereParts.join(' AND ') : ''}
-			ORDER BY created_at DESC
-			LIMIT $${params.length - 1} OFFSET $${params.length}
-		`
-		const dataRes = await client.query(dataSql, params)
+		// Get paginated data
+		const { data, error } = await supabaseAdmin
+			.from('jobs')
+			.select('*')
+			.eq('status', status)
+			.order('created_at', { ascending: false })
+			.range(offset, offset + pageSize - 1)
 
-		const body = {
+		if (q) {
+			// Re-apply search filter for data query
+			const searchQuery = supabaseAdmin
+				.from('jobs')
+				.select('*')
+				.eq('status', status)
+				.or(`title.ilike.%${q}%,department.ilike.%${q}%`)
+				.order('created_at', { ascending: false })
+				.range(offset, offset + pageSize - 1)
+			
+			const searchResult = await searchQuery
+			if (!searchResult.error) {
+				return withCors(NextResponse.json({
+					page,
+					pageSize,
+					total: count || 0,
+					items: searchResult.data || []
+				}))
+			}
+		}
+
+		if (error) {
+			console.error('Error fetching jobs:', error)
+			return withCors(NextResponse.json({ error: 'Failed to fetch jobs' }, { status: 500 }))
+		}
+
+		return withCors(NextResponse.json({
 			page,
 			pageSize,
-			total,
-			items: dataRes.rows
-		}
-		return withCors(NextResponse.json(body))
+			total: count || 0,
+			items: data || []
+		}))
 	} catch (e) {
+		console.error('Error in public jobs API:', e)
 		return withCors(NextResponse.json({ error: 'Failed to fetch jobs' }, { status: 500 }))
-	} finally {
-		client.release()
 	}
 }

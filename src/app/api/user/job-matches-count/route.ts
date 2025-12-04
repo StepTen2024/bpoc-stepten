@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
-import pool from '@/lib/database'
+import { getMatchCountByCandidate } from '@/lib/db/matches'
+import { getCandidateById } from '@/lib/db/candidates'
+import { supabaseAdmin } from '@/lib/supabase/admin'
 
 export async function GET(request: NextRequest) {
 	try {
@@ -8,43 +10,42 @@ export async function GET(request: NextRequest) {
 			return NextResponse.json({ error: 'User ID not provided' }, { status: 400 })
 		}
 
+		// Verify candidate exists
+		const candidate = await getCandidateById(userId)
+		if (!candidate) {
+			return NextResponse.json({ error: 'User not found' }, { status: 404 })
+		}
+
 		const url = new URL(request.url)
 		const thresholdParam = url.searchParams.get('threshold')
 		const threshold = Math.max(0, Math.min(100, Number(thresholdParam ?? 70))) || 70
 
-		const client = await pool.connect()
-		try {
-			// Load user data similar to jobs/match route
-			const userRes = await client.query(
-				`SELECT 
-				  u.id, u.full_name, u.location, u.position, u.bio,
-				  sr.resume_data,
-				  aar.skills_snapshot, aar.experience_snapshot, aar.education_snapshot
-				FROM users u
-				LEFT JOIN saved_resumes sr ON u.id = sr.user_id
-				LEFT JOIN ai_analysis_results aar ON u.id = aar.user_id
-				WHERE u.id = $1
-				LIMIT 1`,
-				[userId]
-			)
-			if (userRes.rows.length === 0) {
-				return NextResponse.json({ error: 'User not found' }, { status: 404 })
-			}
-			const user = userRes.rows[0]
+		// Count matches from Supabase
+		const { count: matchesCount, error: matchesError } = await supabaseAdmin
+			.from('job_matches')
+			.select('*', { count: 'exact', head: true })
+			.eq('candidate_id', userId)
+			.gte('overall_score', threshold)
 
-			// Count using previously analyzed results as the basis
-			const countRes = await client.query(
-				`SELECT COUNT(*)::int AS matches
-				 FROM job_match_results r
-				 JOIN job_requests jr ON jr.status = 'active' AND CAST(jr.id AS text) = r.job_id
-				 WHERE r.user_id = $1 AND r.score >= $2`,
-				[userId, threshold]
-			)
-			const totalRes = await client.query(`SELECT COUNT(*)::int AS total FROM job_requests WHERE status = 'active'`)
-			return NextResponse.json({ matches: countRes.rows[0]?.matches ?? 0, totalActiveJobs: totalRes.rows[0]?.total ?? 0, threshold })
-		} finally {
-			client.release()
+		if (matchesError) {
+			console.error('Error counting matches:', matchesError)
 		}
+
+		// Count active jobs
+		const { count: totalActiveJobs, error: jobsError } = await supabaseAdmin
+			.from('jobs')
+			.select('*', { count: 'exact', head: true })
+			.eq('status', 'active')
+
+		if (jobsError) {
+			console.error('Error counting active jobs:', jobsError)
+		}
+
+		return NextResponse.json({ 
+			matches: matchesCount ?? 0, 
+			totalActiveJobs: totalActiveJobs ?? 0, 
+			threshold 
+		})
 	} catch (e) {
 		console.error('Error computing job matches count:', e)
 		return NextResponse.json({ error: 'Failed to compute job matches' }, { status: 500 })

@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
-import pool from '@/lib/database'
+import { getCandidateById } from '@/lib/db/candidates'
+import { getProfileByCandidate } from '@/lib/db/profiles'
 import { notifyN8nNewUser } from '@/lib/n8n'
-import { createClient } from '@supabase/supabase-js'
 
-// GET - Fetch user profile from Railway
+// GET - Fetch user profile from SUPABASE
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
@@ -13,81 +13,52 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'User ID is required' }, { status: 400 })
     }
 
-    console.log('🔍 API: Fetching profile for user:', userId)
-    console.log('🔍 API: Database URL available:', !!process.env.DATABASE_URL)
-    console.log('🔍 API: Database URL length:', process.env.DATABASE_URL?.length || 0)
-    console.log('🔍 API: Cache busting parameter:', searchParams.get('_t'))
+    console.log('🔍 API: Fetching profile from SUPABASE for user:', userId)
 
-    // Base query (avoid selecting optional columns that may not exist across envs)
-    const query = `
-      SELECT 
-        u.id, u.email, u.first_name, u.last_name, u.full_name, u.location, u.avatar_url, u.phone, u.bio, u.position, u.completed_data, u.birthday, u.slug, u.created_at, u.updated_at,
-        u.gender, u.gender_custom, u.username, u.company, u.admin_level,
-        u.location_place_id, u.location_lat, u.location_lng, u.location_city, u.location_province, u.location_country, u.location_barangay, u.location_region,
-        COALESCE(uls.overall_score, 0) as overall_score
-      FROM users u
-      LEFT JOIN user_leaderboard_scores uls ON u.id = uls.user_id
-      WHERE u.id = $1
-    `
-    
-    console.log('🔍 API: Executing query:', query)
-    console.log('🔍 API: Query parameters:', [userId])
-    
-    let result
-    try {
-      result = await pool.query(query, [userId])
-      console.log('🔍 API: Query result rows count:', result.rows.length)
-    } catch (dbError) {
-      console.error('❌ API: Database query failed:', dbError)
-      console.error('❌ API: Database error details:', {
-        message: dbError instanceof Error ? dbError.message : 'Unknown database error',
-        stack: dbError instanceof Error ? dbError.stack : undefined,
-        errorType: typeof dbError,
-        errorString: String(dbError)
-      })
-      throw dbError
-    }
-
-    if (result.rows.length === 0) {
-      console.log('❌ API: User not found:', userId)
+    // Get candidate (basic info) from Supabase
+    const candidate = await getCandidateById(userId)
+    if (!candidate) {
+      console.log('❌ API: Candidate not found in Supabase:', userId)
       return NextResponse.json({ error: 'User not found' }, { status: 404 })
     }
 
-    const user = result.rows[0]
+    // Get profile (extended info) from Supabase
+    const profile = await getProfileByCandidate(userId)
 
+    // Combine into expected shape (matching old API format)
     const userProfile = {
-      id: user.id,
-      email: user.email,
-      first_name: user.first_name,
-      last_name: user.last_name,
-      full_name: user.full_name,
-      location: user.location,
-      avatar_url: user.avatar_url,
-      phone: user.phone,
-      bio: user.bio,
-      position: user.position,
-      completed_data: user.completed_data,
-      birthday: user.birthday,
-      slug: user.slug,
-      gender: user.gender,
-      gender_custom: user.gender_custom,
-      username: user.username,
-      company: user.company,
-      admin_level: user.admin_level,
-      location_place_id: user.location_place_id,
-      location_lat: user.location_lat,
-      location_lng: user.location_lng,
-      location_city: user.location_city,
-      location_province: user.location_province,
-      location_country: user.location_country,
-      location_barangay: user.location_barangay,
-      location_region: user.location_region,
-      created_at: user.created_at,
-      updated_at: user.updated_at,
-      overall_score: user.overall_score
+      id: candidate.id,
+      email: candidate.email,
+      first_name: candidate.first_name,
+      last_name: candidate.last_name,
+      full_name: candidate.full_name,
+      location: profile?.location || null,
+      avatar_url: candidate.avatar_url,
+      phone: candidate.phone,
+      bio: profile?.bio || null,
+      position: profile?.position || null,
+      completed_data: profile?.profile_completed || false,
+      birthday: profile?.birthday || null,
+      slug: candidate.slug,
+      gender: profile?.gender || null,
+      gender_custom: profile?.gender_custom || null,
+      username: candidate.username,
+      company: profile?.current_employer || null,
+      admin_level: null, // Admins are in bpoc_users, not candidates
+      location_place_id: profile?.location_place_id || null,
+      location_lat: profile?.location_lat || null,
+      location_lng: profile?.location_lng || null,
+      location_city: profile?.location_city || null,
+      location_province: profile?.location_province || null,
+      location_country: profile?.location_country || null,
+      location_barangay: profile?.location_barangay || null,
+      location_region: profile?.location_region || null,
+      created_at: candidate.created_at,
+      updated_at: candidate.updated_at,
+      overall_score: profile?.gamification?.total_xp || 0
     }
     
-    console.log('✅ API: User profile loaded:', userProfile)
+    console.log('✅ API: User profile loaded from Supabase:', { id: userProfile.id, email: userProfile.email })
 
     const response = NextResponse.json({ user: userProfile })
     

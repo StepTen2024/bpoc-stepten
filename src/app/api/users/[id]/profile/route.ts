@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import pool from '@/lib/database'
+import { getCandidateById } from '@/lib/db/candidates'
 
 export async function GET(
   _request: NextRequest,
@@ -9,15 +9,18 @@ export async function GET(
     const { id: userId } = await Promise.resolve(params)
     if (!userId) return NextResponse.json({ error: 'userId required' }, { status: 400 })
 
-    const res = await pool.query(
-      `SELECT slug FROM users WHERE id = $1`,
-      [userId]
-    )
+    const candidate = await getCandidateById(userId)
+    if (!candidate) {
+      return NextResponse.json({ slug: null }, { status: 200 })
+    }
 
-    const slug = res.rows[0]?.slug || null
+    const slug = candidate.slug || null
     if (!slug) return NextResponse.json({ slug: null }, { status: 200 })
     return NextResponse.json({ slug })
   } catch (e) {
-    return NextResponse.json({ error: 'Failed to fetch user slug' }, { status: 500 })
+    return NextResponse.json({ 
+      error: 'Failed to fetch user slug',
+      details: e instanceof Error ? e.message : 'Unknown error'
+    }, { status: 500 })
   }
 }

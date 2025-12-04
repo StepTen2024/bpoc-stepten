@@ -1,10 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { Pool } from 'pg'
-
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-  ssl: { rejectUnauthorized: false }
-})
+import { getResumeByCandidateId } from '@/lib/db/resumes'
+import { getCandidateById } from '@/lib/db/candidates'
 
 export async function GET(request: NextRequest) {
   try {
@@ -14,35 +10,27 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'User ID not provided' }, { status: 400 })
     }
 
-    const client = await pool.connect()
-    try {
-      // Fetch the most recent saved resume for the user
-      const result = await client.query(
-        `SELECT resume_data 
-         FROM saved_resumes 
-         WHERE user_id = $1 
-         ORDER BY created_at DESC 
-         LIMIT 1`,
-        [userId]
-      )
+    // Verify candidate exists
+    const candidate = await getCandidateById(userId)
+    if (!candidate) {
+      return NextResponse.json({ error: 'User not found' }, { status: 404 })
+    }
 
-      if (result.rows.length > 0) {
-        const resumeData = result.rows[0].resume_data
-        return NextResponse.json({ 
-          success: true,
-          hasData: true, 
-          resumeData 
-        })
-      } else {
-        return NextResponse.json({ 
-          success: false,
-          hasData: false, 
-          message: 'No saved resume found' 
-        })
-      }
+    // Fetch the most recent saved resume from Supabase
+    const resume = await getResumeByCandidateId(userId)
 
-    } finally {
-      client.release()
+    if (resume) {
+      return NextResponse.json({ 
+        success: true,
+        hasData: true, 
+        resumeData: resume.resume_data
+      })
+    } else {
+      return NextResponse.json({ 
+        success: false,
+        hasData: false, 
+        message: 'No saved resume found' 
+      })
     }
   } catch (error) {
     console.error('❌ Error fetching saved resume data:', error)

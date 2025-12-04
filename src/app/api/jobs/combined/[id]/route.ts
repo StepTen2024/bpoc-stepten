@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import pool from '@/lib/database'
+import { getJobById } from '@/lib/db/jobs'
+import { supabaseAdmin } from '@/lib/supabase/admin'
 
 export async function GET(
   request: NextRequest,
@@ -7,134 +8,82 @@ export async function GET(
 ) {
   try {
     const { id } = await params
-    const jobId = id
+    let jobId = id
 
-    // Recruiter jobs removed - table dropped
-    if (jobId.startsWith('recruiter_')) {
-      return NextResponse.json({ error: 'Recruiter jobs have been removed' }, { status: 404 })
-    } else if (jobId.startsWith('job_request_')) {
-      // Handle job_requests (admin jobs)
-      const actualJobId = jobId.replace('job_request_', '')
-      
-      const result = await pool.query(`
-        SELECT jr.*, m.company AS company_name
-        FROM job_requests jr
-        LEFT JOIN members m ON m.company_id = jr.company_id
-        WHERE jr.id = $1
-      `, [actualJobId])
-
-      if (result.rows.length === 0) {
-        return NextResponse.json({ error: 'Job not found' }, { status: 404 })
-      }
-
-      const row = result.rows[0]
-      
-      // Get application count
-      const apps = await pool.query('SELECT COUNT(*)::int AS cnt FROM applications WHERE job_id = $1', [row.id])
-      const realApplicants = apps.rows?.[0]?.cnt ?? 0
-
-      return NextResponse.json({
-        job: {
-          id: `job_request_${row.id}`,
-          originalId: String(row.id),
-          source: 'job_requests',
-          company: 'ShoreAgents',
-          companyLogo: row.company_logo || '🏢',
-          title: row.job_title || 'Untitled Role',
-          description: row.job_description || 'No description available',
-          location: row.location || '',
-          work_arrangement: row.work_arrangement,
-          shift: row.shift,
-          industry: row.industry,
-          department: row.department,
-          experience_level: row.experience_level,
-          work_type: row.work_type,
-          application_deadline: row.application_deadline,
-          salary_min: row.salary_min,
-          salary_max: row.salary_max,
-          currency: row.currency,
-          salary_type: row.salary_type,
-          priority: row.priority,
-          status: row.status,
-          applicants: realApplicants,
-          views: row.views || 0,
-          created_at: row.created_at,
-          updated_at: row.updated_at,
-          requirements: Array.isArray(row.requirements) ? row.requirements.flatMap((item: any) => 
-            typeof item === 'string' ? item.split('\n\n').filter((s: string) => s.trim()) : [item]
-          ) : [],
-          responsibilities: Array.isArray(row.responsibilities) ? row.responsibilities.flatMap((item: any) => 
-            typeof item === 'string' ? item.split('\n\n').filter((s: string) => s.trim()) : [item]
-          ) : [],
-          benefits: Array.isArray(row.benefits) ? row.benefits.flatMap((item: any) => 
-            typeof item === 'string' ? item.split('\n\n').filter((s: string) => s.trim()) : [item]
-          ) : [],
-          skills: row.skills || []
-        }
-      })
-    } else {
-      // Handle numeric ID (fallback to job_requests)
-      const actualJobId = jobId.startsWith('processed_') ? jobId.replace('processed_', '') : jobId
-      
-      const result = await pool.query(`
-        SELECT jr.*, m.company AS company_name
-        FROM job_requests jr
-        LEFT JOIN members m ON m.company_id = jr.company_id
-        WHERE jr.id = $1
-      `, [actualJobId])
-
-      if (result.rows.length === 0) {
-        return NextResponse.json({ error: 'Job not found' }, { status: 404 })
-      }
-
-      const row = result.rows[0]
-      
-      // Get application count
-      const apps = await pool.query('SELECT COUNT(*)::int AS cnt FROM applications WHERE job_id = $1', [row.id])
-      const realApplicants = apps.rows?.[0]?.cnt ?? 0
-
-      return NextResponse.json({
-        job: {
-          id: `job_request_${row.id}`,
-          originalId: String(row.id),
-          source: 'job_requests',
-          company: 'ShoreAgents',
-          companyLogo: row.company_logo || '🏢',
-          title: row.job_title || 'Untitled Role',
-          description: row.job_description || 'No description available',
-          location: row.location || '',
-          work_arrangement: row.work_arrangement,
-          shift: row.shift,
-          industry: row.industry,
-          department: row.department,
-          experience_level: row.experience_level,
-          work_type: row.work_type,
-          application_deadline: row.application_deadline,
-          salary_min: row.salary_min,
-          salary_max: row.salary_max,
-          currency: row.currency,
-          salary_type: row.salary_type,
-          priority: row.priority,
-          status: row.status,
-          applicants: realApplicants,
-          views: row.views || 0,
-          created_at: row.created_at,
-          updated_at: row.updated_at,
-          requirements: Array.isArray(row.requirements) ? row.requirements.flatMap((item: any) => 
-            typeof item === 'string' ? item.split('\n\n').filter((s: string) => s.trim()) : [item]
-          ) : [],
-          responsibilities: Array.isArray(row.responsibilities) ? row.responsibilities.flatMap((item: any) => 
-            typeof item === 'string' ? item.split('\n\n').filter((s: string) => s.trim()) : [item]
-          ) : [],
-          benefits: Array.isArray(row.benefits) ? row.benefits.flatMap((item: any) => 
-            typeof item === 'string' ? item.split('\n\n').filter((s: string) => s.trim()) : [item]
-          ) : [],
-          skills: row.skills || []
-        }
-      })
+    // Handle prefixed IDs (legacy support)
+    if (jobId.startsWith('job_request_')) {
+      jobId = jobId.replace('job_request_', '')
+    } else if (jobId.startsWith('processed_')) {
+      jobId = jobId.replace('processed_', '')
     }
+
+    // Get job from Supabase
+    const job = await getJobById(jobId)
+    if (!job) {
+      return NextResponse.json({ error: 'Job not found' }, { status: 404 })
+    }
+
+    // Get application count
+    const { count } = await supabaseAdmin
+      .from('job_applications')
+      .select('*', { count: 'exact', head: true })
+      .eq('job_id', job.id)
+
+    const realApplicants = count || job.applicants_count || 0
+
+    // Get company name
+    const { data: agencyClient } = await supabaseAdmin
+      .from('agency_clients')
+      .select(`
+        company:companies!inner(
+          name
+        )
+      `)
+      .eq('id', job.agency_client_id)
+      .single()
+
+    const requirements = Array.isArray(job.requirements) ? job.requirements : []
+    const responsibilities = Array.isArray(job.responsibilities) ? job.responsibilities : []
+    const benefits = Array.isArray(job.benefits) ? job.benefits : []
+
+    return NextResponse.json({
+      job: {
+        id: job.id,
+        originalId: job.id,
+        source: job.source || 'manual',
+        company: agencyClient?.company?.name || 'Unknown Company',
+        companyLogo: '🏢',
+        title: job.title,
+        description: job.description || 'No description available',
+        location: '', // Location is in profile, not job
+        work_arrangement: job.work_arrangement,
+        shift: job.shift,
+        industry: job.industry,
+        department: job.department,
+        experience_level: job.experience_level,
+        work_type: job.work_type,
+        application_deadline: job.application_deadline,
+        salary_min: job.salary_min,
+        salary_max: job.salary_max,
+        currency: job.currency,
+        salary_type: job.salary_type,
+        priority: job.priority,
+        status: job.status,
+        applicants: realApplicants,
+        views: job.views || 0,
+        created_at: job.created_at,
+        updated_at: job.updated_at,
+        requirements,
+        responsibilities,
+        benefits,
+        skills: [] // Skills are in job_skills table, can be added if needed
+      }
+    })
   } catch (e) {
     console.error('Error fetching job details:', e)
-    return NextResponse.json({ error: 'Failed to fetch job details' }, { status: 500 })
+    return NextResponse.json({ 
+      error: 'Failed to fetch job details',
+      details: e instanceof Error ? e.message : 'Unknown error'
+    }, { status: 500 })
   }
 }

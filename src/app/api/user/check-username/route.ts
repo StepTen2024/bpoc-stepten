@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
-import pool from '@/lib/database'
+import { getCandidateByEmail } from '@/lib/db/candidates'
+import { supabaseAdmin } from '@/lib/supabase/admin'
 
-// GET - Check if username exists and optionally verify owner
+// GET - Check if username exists in Supabase
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
@@ -11,18 +12,15 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Username is required' }, { status: 400 })
     }
 
-    console.log('🔍 Checking username existence:', username)
+    // Check if username exists in Supabase candidates table
+    const { data, error } = await supabaseAdmin
+      .from('candidates')
+      .select('id')
+      .or(`username.eq.${username.toLowerCase()},slug.eq.${username.toLowerCase()}`)
+      .limit(1)
 
-    // Check if username exists
-    const query = 'SELECT id FROM users WHERE username = $1 OR slug = $1'
-    const params = [username.toLowerCase()]
-
-    const result = await pool.query(query, params)
-
-    const exists = result.rows.length > 0
-    const userId = exists ? result.rows[0].id : null
-
-    console.log('✅ Username check result:', { username, exists, userId })
+    const exists = !error && data && data.length > 0
+    const userId = exists ? data[0].id : null
 
     return NextResponse.json({ 
       exists,
@@ -37,7 +35,7 @@ export async function GET(request: NextRequest) {
   }
 }
 
-// POST - Check if username is available
+// POST - Check if username is available in Supabase
 export async function POST(request: NextRequest) {
   try {
     const { username, userId } = await request.json()
@@ -54,22 +52,19 @@ export async function POST(request: NextRequest) {
       }, { status: 400 })
     }
 
-    console.log('🔍 Checking username availability:', username)
-
-    // Check if username exists (excluding current user if updating)
-    let query = 'SELECT id FROM users WHERE username = $1'
-    let params = [username.toLowerCase()]
+    // Check if username exists in Supabase (excluding current user if updating)
+    let query = supabaseAdmin
+      .from('candidates')
+      .select('id')
+      .eq('username', username.toLowerCase())
 
     if (userId) {
-      query += ' AND id != $2'
-      params.push(userId)
+      query = query.neq('id', userId)
     }
 
-    const result = await pool.query(query, params)
+    const { data, error } = await query.limit(1)
 
-    const isAvailable = result.rows.length === 0
-
-    console.log('✅ Username check result:', { username, isAvailable })
+    const isAvailable = error || !data || data.length === 0
 
     return NextResponse.json({ 
       available: isAvailable,

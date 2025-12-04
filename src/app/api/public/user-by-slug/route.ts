@@ -1,5 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
-import pool from '@/lib/database'
+import { getCandidateBySlug } from '@/lib/db/candidates'
+import { getProfileByCandidate } from '@/lib/db/profiles'
+import { getResumeByCandidateId } from '@/lib/db/resumes'
+import { supabaseAdmin } from '@/lib/supabase/admin'
+import { hasDiscData, hasTypingData } from '@/lib/db/assessments'
 
 export async function GET(request: NextRequest) {
   try {
@@ -11,222 +15,217 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'slug is required' }, { status: 400 })
     }
 
-    const client = await pool.connect()
-    try {
-      // Get user data
-      const res = await client.query(
-        `SELECT u.id, u.email, u.first_name, u.last_name, u.full_name, u.location, u.avatar_url, u.phone, u.bio, u.position, u.gender, u.gender_custom, u.birthday, u.created_at, u.updated_at, u.slug, u.username, u.completed_data,
-         aar.overall_score as resume_score, aar.key_strengths, aar.strengths_analysis, aar.ats_compatibility_score, aar.content_quality_score, aar.professional_presentation_score, aar.skills_alignment_score,
-         aar.improvements, aar.recommendations, aar.improved_summary, aar.salary_analysis, aar.career_path, aar.section_analysis,
-         uws.current_employer, uws.current_position, uws.current_salary, uws.notice_period_days, uws.current_mood, uws.work_status, uws.preferred_shift, uws.expected_salary, uws.work_setup, uws.completed_data as work_status_completed_data
-         FROM users u
-         LEFT JOIN ai_analysis_results aar ON u.id = aar.user_id
-         LEFT JOIN user_work_status uws ON u.id = uws.user_id
-         WHERE u.slug = $1 LIMIT 1`,
-        [slug]
-      )
-
-      if (res.rowCount === 0) {
-        return NextResponse.json({ error: 'User not found' }, { status: 404 })
-      }
-
-      const user = res.rows[0]
-      const isOwner = viewerUserId && viewerUserId === user.id
-
-      // Get privacy settings
-      const privacyRes = await client.query(
-        'SELECT * FROM privacy_settings WHERE user_id = $1',
-        [user.id]
-      )
-
-      const privacySettings = privacyRes.rowCount > 0 ? privacyRes.rows[0] : {
-        username: 'public',
-        first_name: 'public',
-        last_name: 'only-me',
-        location: 'public',
-        job_title: 'public',
-        birthday: 'only-me',
-        age: 'only-me',
-        gender: 'only-me',
-        member_since: 'public',
-        resume_score: 'public',
-        games_completed: 'public',
-        key_strengths: 'only-me'
-      }
-
-      // Filter data based on privacy settings
-      const filteredUser = { ...user }
-
-      // Apply privacy filters (only if not owner)
-      if (!isOwner) {
-        // Personal information
-        if (privacySettings.first_name === 'only-me') {
-          delete filteredUser.first_name
-        }
-        if (privacySettings.last_name === 'only-me') {
-          delete filteredUser.last_name
-          delete filteredUser.full_name
-        }
-        if (privacySettings.location === 'only-me') {
-          delete filteredUser.location
-        }
-        if (privacySettings.birthday === 'only-me') {
-          delete filteredUser.birthday
-        }
-        if (privacySettings.gender === 'only-me') {
-          delete filteredUser.gender
-          delete filteredUser.gender_custom
-        }
-
-        // Member Since information
-        if (privacySettings.member_since === 'only-me') {
-          delete filteredUser.created_at
-        }
-
-        // Work information
-        if (privacySettings.job_title === 'only-me') {
-          delete filteredUser.position
-        }
-
-        // Analysis information
-        if (privacySettings.resume_score === 'only-me') {
-          delete filteredUser.resume_score
-          delete filteredUser.ats_compatibility_score
-          delete filteredUser.content_quality_score
-          delete filteredUser.professional_presentation_score
-          delete filteredUser.skills_alignment_score
-        }
-        if (privacySettings.key_strengths === 'only-me') {
-          delete filteredUser.key_strengths
-          delete filteredUser.strengths_analysis
-        }
-
-        // Always hide private fields for non-owners
-        delete filteredUser.email
-        delete filteredUser.phone
-        delete filteredUser.current_salary
-      }
-
-      // Get game completion data - only if user exists
-      // Note: We'll calculate completed games after we fetch the game stats data
-      // to use the exact same logic as the profile completion card
-      let completedGames = 0
-
-      const totalGames = 2
-
-      // Get game stats data
-      let gameStats = {
-        disc_personality_stats: null,
-        typing_hero_stats: null
-      }
-
-      try {
-        // Only fetch game stats if user is owner or games are public
-        if (isOwner || privacySettings.games_completed === 'public') {
-          // Fetch DISC Personality Stats
-          const discStatsRes = await client.query(
-            'SELECT * FROM disc_personality_stats WHERE user_id = $1 ORDER BY created_at DESC LIMIT 1',
-            [user.id]
-          )
-          const ds = discStatsRes.rows[0] || null
-          if (ds) {
-            // Normalize stats so frontend always receives consistent keys
-            gameStats.disc_personality_stats = {
-              // Scores
-              d: ds.latest_d_score ?? ds.d ?? 0,
-              i: ds.latest_i_score ?? ds.i ?? 0,
-              s: ds.latest_s_score ?? ds.s ?? 0,
-              c: ds.latest_c_score ?? ds.c ?? 0,
-              // Types
-              primary_type: ds.latest_primary_type ?? ds.primary_style ?? null,
-              secondary_type: ds.latest_secondary_type ?? ds.secondary_style ?? null,
-              // Session/quality
-              confidence: ds.best_confidence_score ?? ds.consistency_index ?? null,
-              cultural_alignment: ds.cultural_alignment_score ?? null,
-              average_completion_time: ds.average_completion_time ?? null,
-              last_taken_at: ds.last_taken_at ?? null,
-              // XP/badges
-              total_xp: ds.total_xp ?? null,
-              latest_session_xp: ds.latest_session_xp ?? null,
-              badges_earned: ds.badges_earned ?? null,
-              // AI content
-              latest_ai_assessment: ds.latest_ai_assessment ?? null,
-              latest_bpo_roles: ds.latest_bpo_roles ?? null,
-            }
-          } else {
-            gameStats.disc_personality_stats = null
-          }
-
-          // Fetch Typing Hero Stats
-          const typingStatsRes = await client.query(
-            'SELECT * FROM typing_hero_stats WHERE user_id = $1 ORDER BY created_at DESC LIMIT 1',
-            [user.id]
-          )
-          gameStats.typing_hero_stats = typingStatsRes.rows[0] || null
-        }
-      } catch (gameStatsError: any) {
-        console.log('Game stats tables error:', gameStatsError)
-      }
-
-      // Calculate completed games using the exact same logic as profile completion card
-      // Always calculate for owner, or if privacy allows
-      let gamesCompleted = 0
-      
-      // Check Typing Hero (same logic as profile completion card)
-      // Check if game stats were fetched (they might be null if privacy settings block them)
-      if (gameStats.typing_hero_stats) {
-        const typingWpm = gameStats.typing_hero_stats.best_wpm || gameStats.typing_hero_stats.latest_wpm || 0
-        if (typingWpm > 0) {
-          gamesCompleted++
-        }
-      }
-      
-      // Check DISC Personality (same logic as profile completion card)
-      if (gameStats.disc_personality_stats && gameStats.disc_personality_stats.primary_type) {
-        gamesCompleted++
-      }
-      
-      // If privacy settings hide games, set to 0 for non-owners
-      if (!isOwner && privacySettings.games_completed === 'only-me') {
-        completedGames = 0 // Hide the count
-      } else {
-        completedGames = gamesCompleted
-      }
-      
-      console.log('🎮 Games completion calculation:', {
-        userId: user.id,
-        isOwner,
-        privacyGamesCompleted: privacySettings.games_completed,
-        typingStats: gameStats.typing_hero_stats ? {
-          best_wpm: gameStats.typing_hero_stats.best_wpm,
-          latest_wpm: gameStats.typing_hero_stats.latest_wpm,
-          hasStats: true
-        } : { hasStats: false },
-        discStats: gameStats.disc_personality_stats ? {
-          primary_type: gameStats.disc_personality_stats.primary_type,
-          hasStats: true
-        } : { hasStats: false },
-        gamesCompleted,
-        completedGames
-      })
-
-      return NextResponse.json({ 
-        user: {
-          ...filteredUser,
-          completed_games: completedGames,
-          total_games: totalGames,
-          game_stats: gameStats,
-          is_owner: isOwner
-        }
-      })
-
-    } finally {
-      client.release()
+    // Get candidate from Supabase
+    const candidate = await getCandidateBySlug(slug)
+    if (!candidate) {
+      return NextResponse.json({ error: 'User not found' }, { status: 404 })
     }
+
+    const isOwner = viewerUserId && viewerUserId === candidate.id
+
+    // Get profile from Supabase
+    const profile = await getProfileByCandidate(candidate.id)
+
+    // Get privacy settings from Supabase
+    const { data: privacyData } = await supabaseAdmin
+      .from('privacy_settings')
+      .select('*')
+      .eq('candidate_id', candidate.id)
+      .single()
+
+    const privacySettings = privacyData || {
+      username: 'public',
+      first_name: 'public',
+      last_name: 'only-me',
+      location: 'public',
+      job_title: 'public',
+      birthday: 'only-me',
+      age: 'only-me',
+      gender: 'only-me',
+      member_since: 'public',
+      resume_score: 'public',
+      games_completed: 'public',
+      key_strengths: 'only-me'
+    }
+
+    // Build user object from candidate and profile
+    const userData: any = {
+      id: candidate.id,
+      email: candidate.email,
+      first_name: candidate.first_name,
+      last_name: candidate.last_name,
+      full_name: candidate.full_name,
+      location: profile?.location || null,
+      avatar_url: candidate.avatar_url,
+      phone: candidate.phone,
+      bio: profile?.bio || null,
+      position: profile?.position || null,
+      gender: profile?.gender || null,
+      gender_custom: profile?.gender_custom || null,
+      birthday: profile?.birthday || null,
+      created_at: candidate.created_at,
+      updated_at: candidate.updated_at,
+      slug: candidate.slug,
+      username: candidate.username,
+      completed_data: profile?.profile_completed || false,
+      // Work status from profile
+      current_employer: profile?.current_employer || null,
+      current_position: profile?.position || null,
+      current_salary: profile?.current_salary || null,
+      notice_period_days: profile?.notice_period_days || null,
+      current_mood: profile?.current_mood || null,
+      work_status: profile?.work_status || null,
+      preferred_shift: profile?.preferred_shift || null,
+      expected_salary: profile?.expected_salary || null,
+      work_setup: profile?.work_setup || null,
+      work_status_completed_data: profile?.profile_completed || false,
+      // Resume analysis (would need separate table - placeholder for now)
+      resume_score: null,
+      ats_compatibility_score: null,
+      content_quality_score: null,
+      professional_presentation_score: null,
+      skills_alignment_score: null,
+      key_strengths: null,
+      strengths_analysis: null,
+    }
+
+    // Filter data based on privacy settings
+    const filteredUser = { ...userData }
+
+    // Apply privacy filters (only if not owner)
+    if (!isOwner) {
+      if (privacySettings.first_name === 'only-me') {
+        delete filteredUser.first_name
+      }
+      if (privacySettings.last_name === 'only-me') {
+        delete filteredUser.last_name
+        delete filteredUser.full_name
+      }
+      if (privacySettings.location === 'only-me') {
+        delete filteredUser.location
+      }
+      if (privacySettings.birthday === 'only-me') {
+        delete filteredUser.birthday
+      }
+      if (privacySettings.gender === 'only-me') {
+        delete filteredUser.gender
+        delete filteredUser.gender_custom
+      }
+      if (privacySettings.member_since === 'only-me') {
+        delete filteredUser.created_at
+      }
+      if (privacySettings.job_title === 'only-me') {
+        delete filteredUser.position
+      }
+      if (privacySettings.resume_score === 'only-me') {
+        delete filteredUser.resume_score
+        delete filteredUser.ats_compatibility_score
+        delete filteredUser.content_quality_score
+        delete filteredUser.professional_presentation_score
+        delete filteredUser.skills_alignment_score
+      }
+      if (privacySettings.key_strengths === 'only-me') {
+        delete filteredUser.key_strengths
+        delete filteredUser.strengths_analysis
+      }
+      // Always hide private fields for non-owners
+      delete filteredUser.email
+      delete filteredUser.phone
+      delete filteredUser.current_salary
+    }
+
+    // Get game stats - check if games are completed
+    const totalGames = 2
+    let gameStats = {
+      disc_personality_stats: null as any,
+      typing_hero_stats: null as any
+    }
+
+    let gamesCompleted = 0
+
+    try {
+      // Only fetch game stats if user is owner or games are public
+      if (isOwner || privacySettings.games_completed === 'public') {
+        // Check DISC data
+        const hasDisc = await hasDiscData(candidate.id)
+        if (hasDisc) {
+          // Get latest DISC assessment
+          const { data: discData } = await supabaseAdmin
+            .from('candidate_disc_assessments')
+            .select('*')
+            .eq('candidate_id', candidate.id)
+            .eq('session_status', 'completed')
+            .order('created_at', { ascending: false })
+            .limit(1)
+            .single()
+
+          if (discData) {
+            gameStats.disc_personality_stats = {
+              d: discData.d_score || 0,
+              i: discData.i_score || 0,
+              s: discData.s_score || 0,
+              c: discData.c_score || 0,
+              primary_type: discData.primary_type,
+              secondary_type: discData.secondary_type,
+              confidence: discData.confidence_score,
+              cultural_alignment: discData.cultural_alignment,
+              last_taken_at: discData.finished_at,
+              total_xp: discData.xp_earned || 0,
+              latest_session_xp: discData.xp_earned || 0,
+              badges_earned: discData.confidence_score >= 85 ? 1 : 0,
+              latest_ai_assessment: discData.ai_assessment,
+              latest_bpo_roles: discData.ai_bpo_roles,
+            }
+            gamesCompleted++
+          }
+        }
+
+        // Check Typing Hero data
+        const hasTyping = await hasTypingData(candidate.id)
+        if (hasTyping) {
+          const { data: typingData } = await supabaseAdmin
+            .from('candidate_typing_assessments')
+            .select('*')
+            .eq('candidate_id', candidate.id)
+            .eq('session_status', 'completed')
+            .order('created_at', { ascending: false })
+            .limit(1)
+            .single()
+
+          if (typingData && typingData.wpm > 0) {
+            gameStats.typing_hero_stats = {
+              best_wpm: typingData.wpm,
+              latest_wpm: typingData.wpm,
+              best_accuracy: typingData.overall_accuracy,
+              best_score: typingData.score,
+            }
+            gamesCompleted++
+          }
+        }
+      }
+    } catch (gameStatsError: any) {
+      console.log('Game stats error:', gameStatsError)
+    }
+
+    // If privacy settings hide games, set to 0 for non-owners
+    const completedGames = (!isOwner && privacySettings.games_completed === 'only-me') ? 0 : gamesCompleted
+
+    return NextResponse.json({ 
+      user: {
+        ...filteredUser,
+        completed_games: completedGames,
+        total_games: totalGames,
+        game_stats: gameStats,
+        is_owner: isOwner
+      }
+    })
 
   } catch (e) {
     console.error('Error in user-by-slug:', e)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    return NextResponse.json({ 
+      error: 'Internal server error',
+      details: e instanceof Error ? e.message : 'Unknown error'
+    }, { status: 500 })
   }
 }
 
