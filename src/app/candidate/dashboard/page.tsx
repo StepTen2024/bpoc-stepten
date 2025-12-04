@@ -139,14 +139,6 @@ export default function CandidateDashboardPage() {
     return null
   }
 
-  return (
-    <>
-      <ProfileCompletionModal
-        open={showProfileModal}
-        onOpenChange={setShowProfileModal}
-        userId={user.id}
-      />
-
   const completionSteps = [
     { 
       key: 'profile', 
@@ -176,6 +168,14 @@ export default function CandidateDashboardPage() {
 
   const completedSteps = completionSteps.filter(s => s.completed).length
   const totalSteps = completionSteps.length
+
+  return (
+    <>
+      <ProfileCompletionModal
+        open={showProfileModal}
+        onOpenChange={setShowProfileModal}
+        userId={user.id}
+      />
 
       <div className="p-8">
         <div className="max-w-7xl mx-auto">
