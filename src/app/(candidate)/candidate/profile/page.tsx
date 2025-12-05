@@ -9,7 +9,9 @@ import { Textarea } from '@/components/shared/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/shared/ui/select'
 import { useToast } from '@/hooks/use-toast'
 import PlacesAutocomplete from '@/components/shared/ui/places-autocomplete'
-import { User, MapPin, Phone, Briefcase, FileText, Loader2, CheckCircle, X, Info, Sparkles } from 'lucide-react'
+import { User, MapPin, Phone, Briefcase, FileText, Loader2, CheckCircle, X, Info, Sparkles, Camera } from 'lucide-react'
+import Image from 'next/image'
+import { uploadProfilePhoto, optimizeImage } from '@/lib/storage'
 import {
   Tooltip,
   TooltipContent,
@@ -56,6 +58,9 @@ export default function CandidateProfilePage() {
   const [usernameAvailable, setUsernameAvailable] = useState<boolean | null>(null)
   const [usernameTimeout, setUsernameTimeout] = useState<NodeJS.Timeout | null>(null)
   const [age, setAge] = useState<number | null>(null)
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null)
+  const [photoUploading, setPhotoUploading] = useState(false)
+  const [photoError, setPhotoError] = useState<string | null>(null)
   
   const [formData, setFormData] = useState({
     username: '',
@@ -130,10 +135,19 @@ export default function CandidateProfilePage() {
   async function fetchProfile() {
     try {
       setLoading(true)
-      const response = await fetch(`/api/user/profile?userId=${user?.id}`)
-      if (response.ok) {
-        const data = await response.json()
-        setProfile(data.user)
+      // Fetch candidate data including avatar_url
+      const candidateRes = await fetch(`/api/candidates/${user?.id}`)
+      if (candidateRes.ok) {
+        const { candidate, profile: candidateProfile } = await candidateRes.json()
+        setAvatarUrl(candidate.avatar_url)
+        
+        // Also fetch full profile for other data
+        const response = await fetch(`/api/user/profile?userId=${user?.id}`)
+        if (response.ok) {
+          const data = await response.json()
+          setProfile(data.user)
+        }
+        
         setFormData({
           username: data.user.username || '',
           bio: data.user.bio || '',
@@ -201,6 +215,80 @@ export default function CandidateProfilePage() {
       setUsernameAvailable(false)
     } finally {
       setUsernameChecking(false)
+    }
+  }
+
+  // Handle profile picture upload
+  const handlePhotoUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (!file || !user) return
+
+    try {
+      setPhotoUploading(true)
+      setPhotoError(null)
+
+      console.log('📸 Starting photo upload...')
+
+      // Validate file type
+      if (!file.type.startsWith('image/')) {
+        throw new Error('Please select an image file')
+      }
+
+      // Validate file size (5MB limit)
+      if (file.size > 5 * 1024 * 1024) {
+        throw new Error('File size must be less than 5MB')
+      }
+
+      // Optimize image
+      const optimizedFile = await optimizeImage(file)
+      console.log('✅ Image optimized')
+
+      // Upload to Supabase
+      const { publicUrl } = await uploadProfilePhoto(optimizedFile, user.id)
+      console.log('✅ Photo uploaded to Supabase:', publicUrl)
+
+      // Update candidate's avatar_url in Supabase via API route
+      const response = await fetch(`/api/candidates/${user.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          avatar_url: publicUrl,
+        }),
+      })
+
+      if (!response.ok) {
+        const errorText = await response.text()
+        console.error('❌ Failed to update avatar_url:', response.status, errorText)
+        throw new Error('Failed to update profile photo')
+      }
+
+      // Update local state
+      setAvatarUrl(publicUrl)
+      console.log('✅ Profile photo updated successfully')
+
+      toast({
+        title: 'Photo uploaded',
+        description: 'Your profile photo has been updated successfully.',
+      })
+
+      // Trigger header update if needed
+      window.dispatchEvent(new CustomEvent('profileUpdated'))
+
+    } catch (error) {
+      console.error('❌ Photo upload failed:', error)
+      const errorMessage = error instanceof Error ? error.message : 'Failed to upload photo'
+      setPhotoError(errorMessage)
+      toast({
+        title: 'Upload failed',
+        description: errorMessage,
+        variant: 'destructive',
+      })
+    } finally {
+      setPhotoUploading(false)
+      // Reset file input
+      if (event.target) {
+        event.target.value = ''
+      }
     }
   }
 
@@ -386,6 +474,71 @@ export default function CandidateProfilePage() {
             <p className="text-sm text-gray-300">
               <span className="font-semibold text-white">Complete your profile</span> to get personalized job recommendations and increase your visibility to recruiters.
             </p>
+          </div>
+        </div>
+
+        {/* Profile Photo Section */}
+        <div className="relative group overflow-hidden rounded-xl border border-white/10 bg-white/5 backdrop-blur-xl p-6 md:p-8 transition-all hover:border-white/20 hover:bg-white/10 hover:shadow-2xl hover:shadow-purple-500/20">
+          <div className="absolute inset-0 bg-gradient-to-br from-purple-500/10 via-transparent to-blue-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+          <div className="relative z-10">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="p-2 rounded-lg bg-purple-500/20 text-purple-400">
+                <User className="w-5 h-5" />
+              </div>
+              <div>
+                <h2 className="text-xl font-semibold text-white">Profile Photo</h2>
+                <p className="text-sm text-gray-400">Upload a professional photo for your profile</p>
+              </div>
+            </div>
+            <div className="flex flex-col items-center gap-4">
+              <div className="relative w-32 h-32 rounded-full overflow-hidden border-2 border-gray-700 group-hover:border-cyan-500 transition-colors">
+                {photoUploading ? (
+                  <div className="absolute inset-0 flex items-center justify-center bg-black/50">
+                    <Loader2 className="h-8 w-8 animate-spin text-cyan-400" />
+                  </div>
+                ) : avatarUrl ? (
+                  <Image
+                    src={avatarUrl}
+                    alt="Profile Avatar"
+                    fill
+                    className="object-cover rounded-full"
+                  />
+                ) : (
+                  <User className="w-full h-full text-gray-500 p-4 bg-gray-800 rounded-full" />
+                )}
+              </div>
+              <Label htmlFor="profile-photo-upload" className="cursor-pointer">
+                <Button
+                  asChild
+                  variant="outline"
+                  className="bg-white/10 text-white hover:bg-white/20 border-white/20 hover:border-white/30 transition-all"
+                  disabled={photoUploading}
+                >
+                  <div className="flex items-center gap-2">
+                    {photoUploading ? (
+                      <>
+                        <Loader2 className="h-4 w-4 animate-spin" /> Uploading...
+                      </>
+                    ) : (
+                      <>
+                        <Camera className="h-4 w-4" /> {avatarUrl ? 'Change Photo' : 'Upload Photo'}
+                      </>
+                    )}
+                    <input
+                      id="profile-photo-upload"
+                      type="file"
+                      accept="image/*"
+                      onChange={handlePhotoUpload}
+                      className="sr-only"
+                      disabled={photoUploading}
+                    />
+                  </div>
+                </Button>
+              </Label>
+              {photoError && (
+                <p className="text-xs text-red-400 mt-1">{photoError}</p>
+              )}
+            </div>
           </div>
         </div>
 
