@@ -139,6 +139,7 @@ export async function middleware(request: NextRequest) {
 export const config = {
   matcher: [
     '/api/candidates/resume/:path*',
+    '/api/candidates/ai-analysis/:path*',
     '/api/save-resume',
     '/api/save-generated-resume',
     '/api/save-resume-to-profile',
