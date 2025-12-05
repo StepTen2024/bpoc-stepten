@@ -4,7 +4,6 @@ import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useRouter } from 'next/navigation';
-import Header from '@/components/shared/layout/Header';
 import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/shared/ui/card';
 import { Button } from '@/components/shared/ui/button';
@@ -46,12 +45,11 @@ import {
   Users,
   Church,
   Home,
-  ChevronDown,
-  X
+  ChevronDown
 } from 'lucide-react';
 import { PacmanLoader } from 'react-spinners';
 
-import { FILIPINO_DISC_SCENARIOS } from '../../../../data/filipinoDiscScenarios';
+import { FILIPINO_DISC_SCENARIOS } from '@/data/filipinoDiscScenarios';
 
 // Animal personality definitions
 const ANIMAL_PERSONALITIES = {
@@ -357,19 +355,10 @@ export default function FilipinoDiscGame() {
     audio.volume = isMuted ? 0 : 0.3; // Respect mute state
     audio.preload = 'auto';
     
-    // Add error handling - log warning instead of error to avoid breaking the game
+    // Add error handling
     audio.addEventListener('error', (e) => {
-      // Check if the error is actually a loading failure
-      const target = e.target as HTMLAudioElement;
-      if (target && target.error) {
-        console.warn(`⚠️ Audio file not found or failed to load: /bpoc-disc-songs/${musicLanguage}.mp3. Game will continue without background music.`);
-      }
+      console.error('❌ Audio loading error:', e);
     });
-    
-    // Also handle load errors
-    audio.addEventListener('canplaythrough', () => {
-      // Audio loaded successfully
-    }, { once: true });
     
     setBackgroundMusic(audio);
     
@@ -1461,8 +1450,7 @@ Make it deeply personal and actionable based on their actual choices.`;
   if (showSpiritReveal) {
     return (
       <div className="min-h-screen cyber-grid overflow-hidden">
-        <Header />
-        <div className="pt-16 relative z-10 flex items-center justify-center min-h-screen">
+        <div className="pt-8 relative z-10 flex items-center justify-center min-h-screen">
           <Card className="disc-game-screen max-w-2xl mx-auto">
             <CardContent className="p-12 text-center">
               <div className="mb-8">
@@ -1529,8 +1517,7 @@ Make it deeply personal and actionable based on their actual choices.`;
   if (gameState.isGeneratingPersonalized) {
     return (
 			<div className="min-h-screen cyber-grid pb-40">
-        <Header />
-        <div className="pt-16 relative z-10 flex items-center justify-center min-h-screen">
+        <div className="pt-8 relative z-10 flex items-center justify-center min-h-screen">
           <Card className="disc-game-screen max-w-2xl mx-auto">
             <CardContent className="p-8 text-center">
               <div className="mb-6">
@@ -1584,9 +1571,8 @@ Make it deeply personal and actionable based on their actual choices.`;
           <div className="absolute bottom-1/3 right-1/4 w-80 h-80 bg-purple-500/10 rounded-full blur-3xl animate-pulse delay-1000"></div>
         </div>
         
-        <Header />
         
-        <div className="pt-16 relative z-10">
+        <div className="pt-8 relative z-10">
           <div className="container mx-auto px-4 py-8">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -2218,7 +2204,7 @@ Make it deeply personal and actionable based on their actual choices.`;
                 <Button
                   onClick={() => {
                     stopPreview();
-                    router.push('/career-tools/games');
+                    router.push('/candidate/games');
                   }}
                   className="bg-gray-700 hover:bg-gray-600 text-white px-6 py-3 rounded-lg w-full"
                 >
@@ -2363,9 +2349,8 @@ Make it deeply personal and actionable based on their actual choices.`;
           <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-cyan-500/5 rounded-full blur-3xl"></div>
         </div>
 
-        <Header />
         
-        <div className="pt-16 relative z-10">
+        <div className="pt-8 relative z-10">
           <div className="container mx-auto px-4 py-8">
             {/* Enhanced Header */}
             <motion.div
@@ -2378,7 +2363,7 @@ Make it deeply personal and actionable based on their actual choices.`;
                   variant="ghost"
                   onClick={() => {
                     stopPreview();
-                    router.push('/career-tools/games');
+                    router.push('/candidate/games');
                   }}
                   className="mr-6 text-gray-400 hover:text-white hover:bg-white/10 transition-all duration-300"
                 >
@@ -2895,9 +2880,8 @@ Make it deeply personal and actionable based on their actual choices.`;
         <div className="absolute top-1/2 right-1/3 w-64 h-64 bg-green-500/10 rounded-full blur-3xl animate-pulse delay-500"></div>
       </div>
       
-      <Header />
       
-		<div className="pt-16 relative z-10 min-h-screen">
+		<div className="pt-8 relative z-10 min-h-screen">
         <div className="container mx-auto px-4 md:px-6 py-4 h-full">
           {/* Compact Header */}
           <motion.div
@@ -3259,7 +3243,7 @@ Make it deeply personal and actionable based on their actual choices.`;
             <AlertDialogAction 
               onClick={() => {
                 stopPreview();
-                router.push('/career-tools/games');
+                router.push('/candidate/games');
               }} 
               className="bg-red-600 hover:bg-red-700"
             >
