@@ -1338,7 +1338,7 @@ export default function ResumeBuilderPage() {
                               key={index}
                               initial={{ opacity: 0, scale: 0.9 }}
                               animate={{ opacity: 1, scale: 1 }}
-                              className="flex items-center justify-between p-3 glass-card rounded-lg border border-white/10"
+                              className="flex items-center justify-between p-3 rounded-lg border border-white/10 bg-white/5 backdrop-blur-md"
                             >
                               <div className="flex items-center gap-3">
                                 {getFileIcon(file)}
@@ -1421,7 +1421,7 @@ export default function ResumeBuilderPage() {
                               key={index}
                               initial={{ opacity: 0, scale: 0.9 }}
                               animate={{ opacity: 1, scale: 1 }}
-                              className="flex items-center justify-between p-3 glass-card rounded-lg border border-white/10"
+                              className="flex items-center justify-between p-3 rounded-lg border border-white/10 bg-white/5 backdrop-blur-md"
                             >
                               <div className="flex items-center gap-3">
                                 <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-white/10">
@@ -1495,8 +1495,8 @@ export default function ResumeBuilderPage() {
                         </Button>
                       </div>
                     </div>
-                  </CardContent>
-                </Card>
+                  </div>
+                </div>
               </motion.div>
             </div>
 
@@ -1507,8 +1507,8 @@ export default function ResumeBuilderPage() {
                 animate={{ opacity: 1, y: 0 }}
                 className="mt-6"
               >
-                <Card className="glass-card border-red-500/30 bg-red-500/5">
-                  <CardContent className="pt-6">
+                <div className="relative group overflow-hidden rounded-xl border border-red-500/30 bg-red-500/5 backdrop-blur-xl">
+                  <div className="relative z-10 p-6">
                     <div className="flex items-start gap-3">
                       <AlertCircle className="h-5 w-5 text-red-400 mt-0.5" />
                       <div>
@@ -1522,8 +1522,8 @@ export default function ResumeBuilderPage() {
                         </ul>
                       </div>
                     </div>
-                  </CardContent>
-                </Card>
+                  </div>
+                </div>
               </motion.div>
             )}
 
@@ -1535,17 +1535,19 @@ export default function ResumeBuilderPage() {
                 transition={{ delay: 0.4 }}
                 className="mt-8"
               >
-                <Card className="glass-card border-white/10">
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2 text-white">
-                      <Sparkles className="h-5 w-5 text-yellow-400" />
-                      Step 1: Resume Data Extraction
-                    </CardTitle>
-                    <CardDescription className="text-gray-300">
-                      We will extract your data to analyze your current resume.
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
+                <div className="relative group overflow-hidden rounded-xl border border-white/10 bg-white/5 backdrop-blur-xl transition-all duration-300 hover:border-white/20 hover:bg-white/10 hover:shadow-2xl hover:shadow-yellow-500/20">
+                  <div className="absolute inset-0 bg-gradient-to-br from-yellow-500/10 via-transparent to-cyan-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                  <div className="relative z-10 p-6">
+                    <div className="mb-4">
+                      <h3 className="flex items-center gap-2 text-xl font-bold text-white mb-2">
+                        <Sparkles className="h-5 w-5 text-yellow-400" />
+                        Step 1: Resume Data Extraction
+                      </h3>
+                      <p className="text-gray-300 text-sm">
+                        We will extract your data to analyze your current resume.
+                      </p>
+                    </div>
+                    <div className="space-y-4">
                     {/* Process Files Button */}
                     <div className="text-center space-y-4">
                       {/* Only show Analyze button if not completed */}
@@ -1619,8 +1621,8 @@ export default function ResumeBuilderPage() {
                                   <p className="text-gray-300 text-xs">Your resume data has been extracted.</p>
                                 </div>
                               </div>
-                            </CardContent>
-                          </Card>
+                            </div>
+                          </div>
                         </motion.div>
                       )}
 
