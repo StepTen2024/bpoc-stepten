@@ -1099,7 +1099,7 @@ export default function CandidateProfilePage() {
                 <Label htmlFor="preferred_work_setup" className={cn(labelClass, "mb-1.5 block")}>
                   Preferred Work Setup <span className="text-red-400">*</span>
                 </Label>
-                <Select value={formData.preferred_work_setup} onValueChange={(value) => handleInputChange('preferred_work_setup', value)}>
+                <Select value={formData.preferred_work_setup} onValueChange={(value) => handleInputChange('preferred_work_setup', value)} disabled={shouldDisableFields}>
                   <SelectTrigger className={inputClass}>
                     <SelectValue placeholder="Select work setup" />
                   </SelectTrigger>
