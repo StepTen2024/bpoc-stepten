@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { 
   Upload, 
@@ -10,7 +10,8 @@ import {
   ArrowLeft,
   ArrowRight,
   CheckCircle,
-  AlertCircle
+  AlertCircle,
+  Terminal
 } from 'lucide-react';
 import { Button } from '@/components/shared/ui/button';
 import { useRouter } from 'next/navigation';
@@ -27,12 +28,21 @@ export default function ResumeUploadPage() {
   const router = useRouter();
   const { user } = useAuth();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const logsEndRef = useRef<HTMLDivElement>(null);
   
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [progress, setProgress] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [isDragActive, setIsDragActive] = useState(false);
+  const [logs, setLogs] = useState<string[]>([]);
+
+  // Auto-scroll logs
+  useEffect(() => {
+    if (logsEndRef.current) {
+      logsEndRef.current.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [logs]);
 
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
@@ -88,6 +98,7 @@ export default function ResumeUploadPage() {
     
     setIsProcessing(true);
     setProgress(0);
+    setLogs([]);
     setError(null);
     
     try {
@@ -98,6 +109,7 @@ export default function ResumeUploadPage() {
       }
       
       // Fetch API keys
+      setLogs(prev => [...prev, '🔑 Authenticating and fetching configuration...']);
       setProgress(5);
       const keyResponse = await fetch('/api/get-api-key');
       if (!keyResponse.ok) {
@@ -109,6 +121,7 @@ export default function ResumeUploadPage() {
         throw new Error(keyResult.error || 'API keys not available');
       }
       
+      setLogs(prev => [...prev, '🚀 Initializing resume extraction pipeline...']);
       setProgress(10);
       
       // Track progress from processing logs
@@ -132,11 +145,31 @@ export default function ResumeUploadPage() {
         ).join(' ');
         originalConsoleLog(...args);
         
+        // Check for progress updates
         for (const [pattern, prog] of Object.entries(progressMap)) {
           if (message.includes(pattern)) {
             setProgress(prog);
+            // Add to UI logs if it matches a known step or looks like a status update
+            setLogs(prev => [...prev, message]);
             break;
           }
+        }
+
+        // Also capture other relevant logs that aren't in the progress map but are safe
+        // Filter out sensitive data and too technical logs
+        if (
+          (message.includes('Step') || message.includes('Complete') || message.includes('Processing') || message.includes('Converting')) &&
+          !message.includes('API Key') && 
+          !message.includes('Bearer') &&
+          !logs.includes(message) // Prevent duplicates
+        ) {
+           // Only add if not already added by the loop above (though setLogs is async so simple check might not be enough, but Set would be better. 
+           // Since we break in the loop, we just need to handle non-progress map messages here.)
+           // Actually, simpler approach: Just pass through specific safe messages
+           const isProgressMsg = Object.keys(progressMap).some(k => message.includes(k));
+           if (!isProgressMsg) {
+             setLogs(prev => [...prev, message]);
+           }
         }
       };
       
@@ -155,6 +188,7 @@ export default function ResumeUploadPage() {
         throw new Error('No data extracted from resume');
       }
       
+      setLogs(prev => [...prev, '💾 Saving extracted data to database...']);
       setProgress(98);
       
       // Save to database
@@ -174,6 +208,9 @@ export default function ResumeUploadPage() {
       
       if (!saveResponse.ok) {
         console.warn('Failed to save to database, but continuing...');
+        setLogs(prev => [...prev, '⚠️ Warning: Failed to save to database backup, but proceeding...']);
+      } else {
+        setLogs(prev => [...prev, '✅ Data saved successfully!']);
       }
       
       setProgress(100);
@@ -186,11 +223,12 @@ export default function ResumeUploadPage() {
       // Navigate to analysis page
       setTimeout(() => {
         router.push('/candidate/resume/analysis');
-      }, 500);
+      }, 1000); // Increased delay slightly so user can see "Complete"
       
     } catch (err) {
       console.error('Error processing resume:', err);
       setError(err instanceof Error ? err.message : 'Failed to process resume');
+      setLogs(prev => [...prev, `❌ Error: ${err instanceof Error ? err.message : 'Failed to process resume'}`]);
       setIsProcessing(false);
     }
   };
@@ -250,14 +288,14 @@ export default function ResumeUploadPage() {
         <div className="relative z-10">
           {isProcessing ? (
             /* Processing State */
-            <div className="text-center py-12">
+            <div className="text-center py-8">
               <Loader2 className="h-16 w-16 text-cyan-400 mx-auto mb-4 animate-spin" />
               <h2 className="text-2xl font-bold text-white mb-2">Extracting Resume Data</h2>
               <p className="text-gray-300 mb-6">
                 Using AI to extract text and structure from your resume...
               </p>
               
-              <div className="w-full max-w-md mx-auto">
+              <div className="w-full max-w-md mx-auto mb-8">
                 <div className="bg-gray-700 rounded-full h-3 overflow-hidden">
                   <motion.div 
                     className="bg-gradient-to-r from-cyan-500 to-purple-500 h-full"
@@ -268,26 +306,55 @@ export default function ResumeUploadPage() {
                 </div>
                 <p className="text-gray-400 mt-2 text-sm">{progress}% complete</p>
               </div>
+
+              {/* Live Console Log */}
+              <div className="w-full max-w-xl mx-auto bg-black/80 rounded-lg border border-white/10 p-4 text-left font-mono text-sm overflow-hidden shadow-inner">
+                <div className="flex items-center gap-2 mb-2 pb-2 border-b border-white/10 text-xs text-gray-500 uppercase tracking-wider">
+                  <Terminal className="h-3 w-3" />
+                  <span>Live Process Log</span>
+                </div>
+                <div className="h-48 overflow-y-auto space-y-1 pr-2 scrollbar-thin scrollbar-thumb-gray-700 scrollbar-track-transparent">
+                  {logs.map((log, i) => (
+                    <div key={i} className="text-gray-300 break-words animate-in fade-in slide-in-from-left-1 duration-300">
+                      <span className="text-gray-600 mr-2 select-none">
+                        {'>'}
+                      </span>
+                      <span className={
+                        log.includes('✅') ? 'text-green-400' :
+                        log.includes('❌') ? 'text-red-400' :
+                        log.includes('🔑') ? 'text-yellow-400' :
+                        log.includes('🚀') ? 'text-cyan-400' :
+                        'text-gray-300'
+                      }>
+                        {log}
+                      </span>
+                    </div>
+                  ))}
+                  <div ref={logsEndRef} />
+                </div>
+              </div>
             </div>
           ) : uploadedFile ? (
             /* File Selected State */
-            <div className="text-center py-8">
-              <div className="mb-6 p-6 bg-white/5 rounded-xl inline-block">
-                <div className="flex items-center gap-4">
-                  <div className="w-14 h-14 rounded-lg bg-cyan-500/20 flex items-center justify-center">
-                    <FileText className="h-7 w-7 text-cyan-400" />
-                  </div>
-                  <div className="text-left">
-                    <p className="text-white font-medium text-lg">{uploadedFile.name}</p>
-                    <p className="text-gray-400 text-sm">
-                      {(uploadedFile.size / 1024).toFixed(1)} KB
-                    </p>
+            <div className="flex flex-col items-center py-8">
+              <div className="mb-8 p-6 bg-white/5 rounded-xl border border-white/10 w-full max-w-lg">
+                <div className="flex items-center justify-between gap-4">
+                  <div className="flex items-center gap-4 overflow-hidden">
+                    <div className="w-12 h-12 flex-shrink-0 rounded-lg bg-cyan-500/20 flex items-center justify-center">
+                      <FileText className="h-6 w-6 text-cyan-400" />
+                    </div>
+                    <div className="text-left min-w-0">
+                      <p className="text-white font-medium text-lg truncate">{uploadedFile.name}</p>
+                      <p className="text-gray-400 text-sm">
+                        {(uploadedFile.size / 1024).toFixed(1)} KB
+                      </p>
+                    </div>
                   </div>
                   <Button
                     variant="ghost"
                     size="sm"
                     onClick={() => setUploadedFile(null)}
-                    className="text-gray-400 hover:text-red-400"
+                    className="text-gray-400 hover:text-red-400 flex-shrink-0"
                   >
                     <X className="h-5 w-5" />
                   </Button>
@@ -296,7 +363,7 @@ export default function ResumeUploadPage() {
               
               <Button
                 onClick={handleProcessResume}
-                className="bg-gradient-to-r from-cyan-500 to-purple-600 hover:from-cyan-600 hover:to-purple-700 text-white px-8 py-3 text-lg"
+                className="bg-gradient-to-r from-cyan-500 to-purple-600 hover:from-cyan-600 hover:to-purple-700 text-white px-8 py-6 text-lg rounded-xl shadow-lg shadow-cyan-500/20 hover:shadow-cyan-500/40 transition-all w-full max-w-md"
               >
                 Extract Resume Data
                 <ArrowRight className="h-5 w-5 ml-2" />
@@ -389,4 +456,3 @@ export default function ResumeUploadPage() {
     </div>
   );
 }
-

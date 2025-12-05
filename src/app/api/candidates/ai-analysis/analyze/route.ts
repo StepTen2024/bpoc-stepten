@@ -50,7 +50,7 @@ export async function POST(request: NextRequest) {
     const resumeText = formatResumeForAnalysis(resumeData);
     
     // Check if we have Claude API key
-    const anthropicApiKey = process.env.ANTHROPIC_API_KEY;
+    const anthropicApiKey = process.env.CLAUDE_API_KEY || process.env.ANTHROPIC_API_KEY;
     
     let analysis: any;
     let improvedResume: any;
@@ -177,38 +177,65 @@ Respond in this exact JSON format:
     // Save to candidate_ai_analysis table
     console.log('💾 Saving AI analysis to candidate_ai_analysis...');
     
-    const { data: savedAnalysis, error: analysisError } = await supabaseAdmin
+    // First, check if an analysis exists for this candidate
+    const { data: existingAnalysis } = await supabaseAdmin
       .from('candidate_ai_analysis')
-      .upsert({
-        candidate_id: userId,
-        session_id: sessionId,
-        overall_score: analysis.overallScore,
-        ats_compatibility_score: analysis.atsCompatibility,
-        content_quality_score: analysis.contentQuality,
-        professional_presentation_score: analysis.professionalPresentation,
-        key_strengths: analysis.keyStrengths,
-        improvements: analysis.improvements,
-        recommendations: analysis.recommendations,
-        improved_summary: analysis.improvedSummary,
-        skills_snapshot: skillsSnapshot,
-        experience_snapshot: experienceSnapshot,
-        education_snapshot: educationSnapshot,
-        candidate_profile_snapshot: {
-          name: resumeData.name,
-          email: resumeData.email,
-          phone: resumeData.phone,
-          bestJobTitle: resumeData.bestJobTitle,
-        },
-        analysis_metadata: {
-          analyzed_at: new Date().toISOString(),
-          model_used: anthropicApiKey ? 'claude-sonnet-4-20250514' : 'fallback',
-          source: 'dashboard-resume-builder',
-        },
-      }, {
-        onConflict: 'candidate_id',
-      })
-      .select()
-      .single();
+      .select('id')
+      .eq('candidate_id', userId)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    let savedAnalysis;
+    let analysisError;
+
+    const analysisData = {
+      candidate_id: userId,
+      session_id: sessionId,
+      overall_score: analysis.overallScore,
+      ats_compatibility_score: analysis.atsCompatibility,
+      content_quality_score: analysis.contentQuality,
+      professional_presentation_score: analysis.professionalPresentation,
+      key_strengths: analysis.keyStrengths,
+      improvements: analysis.improvements,
+      recommendations: analysis.recommendations,
+      improved_summary: analysis.improvedSummary,
+      skills_snapshot: skillsSnapshot,
+      experience_snapshot: experienceSnapshot,
+      education_snapshot: educationSnapshot,
+      candidate_profile_snapshot: {
+        name: resumeData.name,
+        email: resumeData.email,
+        phone: resumeData.phone,
+        bestJobTitle: resumeData.bestJobTitle,
+      },
+      analysis_metadata: {
+        analyzed_at: new Date().toISOString(),
+        model_used: anthropicApiKey ? 'claude-sonnet-4-20250514' : 'fallback',
+        source: 'dashboard-resume-builder',
+      },
+    };
+
+    if (existingAnalysis) {
+      // Update existing analysis
+      const result = await supabaseAdmin
+        .from('candidate_ai_analysis')
+        .update(analysisData)
+        .eq('id', existingAnalysis.id)
+        .select()
+        .single();
+      savedAnalysis = result.data;
+      analysisError = result.error;
+    } else {
+      // Insert new analysis
+      const result = await supabaseAdmin
+        .from('candidate_ai_analysis')
+        .insert(analysisData)
+        .select()
+        .single();
+      savedAnalysis = result.data;
+      analysisError = result.error;
+    }
 
     if (analysisError) {
       console.error('❌ Error saving AI analysis:', analysisError);

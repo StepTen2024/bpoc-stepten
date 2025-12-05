@@ -79,37 +79,64 @@ export async function POST(request: NextRequest) {
     })
 
     // Save to candidate_ai_analysis table
-    const { data: analysis, error: analysisError } = await supabaseAdmin
+    // First check if an analysis exists for this candidate
+    const { data: existingAnalysis } = await supabaseAdmin
       .from('candidate_ai_analysis')
-      .upsert({
-        candidate_id: userId,
-        resume_id: resume_id || null,
-        session_id,
-        overall_score,
-        ats_compatibility_score: ats_compatibility_score || null,
-        content_quality_score: content_quality_score || null,
-        professional_presentation_score: professional_presentation_score || null,
-        skills_alignment_score: skills_alignment_score || null,
-        key_strengths: key_strengths || [],
-        strengths_analysis: strengths_analysis || {},
-        improvements: improvements || [],
-        recommendations: recommendations || [],
-        section_analysis: section_analysis || {},
-        improved_summary: improved_summary || null,
-        salary_analysis: salary_analysis || null,
-        career_path: career_path || null,
-        candidate_profile_snapshot: candidate_profile_snapshot || null,
-        skills_snapshot: skills_snapshot || null,
-        experience_snapshot: experience_snapshot || null,
-        education_snapshot: education_snapshot || null,
-        analysis_metadata: analysis_metadata || null,
-        portfolio_links: portfolio_links || null,
-        files_analyzed: files_analyzed || null,
-      }, {
-        onConflict: 'candidate_id', // Update if exists for same candidate
-      })
-      .select()
-      .single()
+      .select('id')
+      .eq('candidate_id', userId)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    const analysisData = {
+      candidate_id: userId,
+      resume_id: resume_id || null,
+      session_id,
+      overall_score,
+      ats_compatibility_score: ats_compatibility_score || null,
+      content_quality_score: content_quality_score || null,
+      professional_presentation_score: professional_presentation_score || null,
+      skills_alignment_score: skills_alignment_score || null,
+      key_strengths: key_strengths || [],
+      strengths_analysis: strengths_analysis || {},
+      improvements: improvements || [],
+      recommendations: recommendations || [],
+      section_analysis: section_analysis || {},
+      improved_summary: improved_summary || null,
+      salary_analysis: salary_analysis || null,
+      career_path: career_path || null,
+      candidate_profile_snapshot: candidate_profile_snapshot || null,
+      skills_snapshot: skills_snapshot || null,
+      experience_snapshot: experience_snapshot || null,
+      education_snapshot: education_snapshot || null,
+      analysis_metadata: analysis_metadata || null,
+      portfolio_links: portfolio_links || null,
+      files_analyzed: files_analyzed || null,
+    };
+
+    let analysis;
+    let analysisError;
+
+    if (existingAnalysis) {
+      // Update existing analysis
+      const result = await supabaseAdmin
+        .from('candidate_ai_analysis')
+        .update(analysisData)
+        .eq('id', existingAnalysis.id)
+        .select()
+        .single();
+      analysis = result.data;
+      analysisError = result.error;
+    } else {
+      // Insert new analysis
+      const result = await supabaseAdmin
+        .from('candidate_ai_analysis')
+        .insert(analysisData)
+        .select()
+        .single();
+      analysis = result.data;
+      analysisError = result.error;
+    }
 
     if (analysisError) {
       console.error('❌ Error saving AI analysis:', analysisError)

@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Sparkles, 
   FileText, 
@@ -14,7 +14,10 @@ import {
   Target,
   TrendingUp,
   Award,
-  SkipForward
+  Database,
+  ChevronRight,
+  Star,
+  AlertTriangle
 } from 'lucide-react';
 import { Button } from '@/components/shared/ui/button';
 import { useRouter } from 'next/navigation';
@@ -37,6 +40,7 @@ export default function ResumeAnalysisPage() {
   const [error, setError] = useState<string | null>(null);
   const [analysisComplete, setAnalysisComplete] = useState(false);
   const [analysisResults, setAnalysisResults] = useState<any>(null);
+  const [savedToDatabase, setSavedToDatabase] = useState(false);
 
   // Load extracted resume data
   useEffect(() => {
@@ -88,6 +92,7 @@ export default function ResumeAnalysisPage() {
     setIsAnalyzing(true);
     setProgress(0);
     setError(null);
+    setSavedToDatabase(false);
     
     try {
       const sessionToken = await getSessionToken();
@@ -107,6 +112,7 @@ export default function ResumeAnalysisPage() {
       }, 500);
       
       // Call AI analysis API
+      console.log('🤖 Calling AI analysis API...');
       const response = await fetch('/api/candidates/ai-analysis/analyze', {
         method: 'POST',
         headers: {
@@ -128,26 +134,84 @@ export default function ResumeAnalysisPage() {
       }
       
       const result = await response.json();
+      console.log('✅ Analysis result:', result);
+      
+      setProgress(90);
+      
+      // Now save the analysis results separately using the save endpoint
+      try {
+        const sessionId = `analysis-${user?.id}-${Date.now()}`;
+        
+        console.log('💾 Saving analysis to database...');
+        const saveResponse = await fetch('/api/candidates/ai-analysis/save', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${sessionToken}`,
+            'x-user-id': String(user?.id)
+          },
+          body: JSON.stringify({
+            session_id: sessionId,
+            resume_id: null,
+            overall_score: result.analysis?.overallScore || 0,
+            ats_compatibility_score: result.analysis?.atsCompatibility || null,
+            content_quality_score: result.analysis?.contentQuality || null,
+            professional_presentation_score: result.analysis?.professionalPresentation || null,
+            skills_alignment_score: null,
+            key_strengths: result.analysis?.keyStrengths || [],
+            strengths_analysis: {},
+            improvements: result.analysis?.improvements || [],
+            recommendations: result.analysis?.recommendations || [],
+            section_analysis: {},
+            improved_summary: result.analysis?.improvedSummary || null,
+            salary_analysis: null,
+            career_path: null,
+            candidate_profile_snapshot: {
+              name: extractedData.name,
+              email: extractedData.email,
+              phone: extractedData.phone,
+              bestJobTitle: extractedData.bestJobTitle
+            },
+            skills_snapshot: result.analysis?.skills || extractedData.skills || [],
+            experience_snapshot: result.analysis?.experience || extractedData.experience || [],
+            education_snapshot: result.analysis?.education || extractedData.education || [],
+            analysis_metadata: {
+              session_id: sessionId,
+              analyzed_at: new Date().toISOString(),
+              source: 'candidate-dashboard',
+            },
+            portfolio_links: null,
+            files_analyzed: null,
+          })
+        });
+
+        if (saveResponse.ok) {
+          console.log('✅ Analysis saved to database');
+          setSavedToDatabase(true);
+          toast.success('AI analysis complete and saved!');
+        } else {
+          const saveError = await saveResponse.json().catch(() => ({}));
+          console.error('❌ Failed to save analysis:', saveError);
+          toast.warning('Analysis complete, but failed to save to database');
+        }
+      } catch (saveError) {
+        console.error('❌ Error saving analysis:', saveError);
+        toast.warning('Analysis complete, but failed to save to database');
+      }
+      
       setProgress(100);
       setAnalysisResults(result.analysis);
       setAnalysisComplete(true);
-      
-      toast.success('AI analysis complete!');
-      
-      // Navigate to build page after short delay
-      setTimeout(() => {
-        router.push('/candidate/resume/build');
-      }, 1500);
       
     } catch (err) {
       console.error('AI Analysis error:', err);
       setError(err instanceof Error ? err.message : 'AI analysis failed');
       setIsAnalyzing(false);
+      setAnalysisComplete(false);
     }
   };
 
-  const handleSkipAnalysis = () => {
-    toast.info('Skipping AI analysis...');
+  const handleContinueToBuild = () => {
     router.push('/candidate/resume/build');
   };
 
@@ -213,45 +277,156 @@ export default function ResumeAnalysisPage() {
         
         <div className="relative z-10">
           {analysisComplete ? (
-            /* Analysis Complete State */
-            <div className="text-center py-8">
+            /* Analysis Complete State - Show Full Results */
+            <div className="space-y-6">
               <motion.div
                 initial={{ scale: 0 }}
                 animate={{ scale: 1 }}
                 transition={{ type: "spring", duration: 0.5 }}
+                className="text-center"
               >
                 <CheckCircle className="h-20 w-20 text-emerald-400 mx-auto mb-4" />
+                <h2 className="text-2xl font-bold text-white mb-2">Analysis Complete!</h2>
+                <p className="text-gray-300">
+                  Your resume has been analyzed and enhanced by AI
+                </p>
+                
+                {/* Database Save Status */}
+                <div className={`mt-4 inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm ${
+                  savedToDatabase 
+                    ? 'bg-emerald-500/10 border border-emerald-500/30 text-emerald-400'
+                    : 'bg-yellow-500/10 border border-yellow-500/30 text-yellow-400'
+                }`}>
+                  <Database className="h-4 w-4" />
+                  {savedToDatabase ? 'Saved to Database' : 'Warning: Not saved to database'}
+                </div>
               </motion.div>
-              <h2 className="text-2xl font-bold text-white mb-2">Analysis Complete!</h2>
-              <p className="text-gray-300 mb-6">
-                Your resume has been analyzed and enhanced by Claude AI
-              </p>
-              
-              {/* Quick Stats */}
+
+              {/* Scores Section */}
               {analysisResults && (
-                <div className="grid grid-cols-3 gap-4 max-w-md mx-auto mb-6">
-                  <div className="bg-white/5 rounded-lg p-3">
-                    <div className="text-2xl font-bold text-cyan-400">
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                  <div className="bg-white/5 rounded-xl p-4 border border-cyan-500/30">
+                    <div className="text-3xl font-bold text-cyan-400 mb-1">
                       {analysisResults.overallScore || 75}
                     </div>
-                    <div className="text-xs text-gray-400">Overall Score</div>
+                    <div className="text-sm text-gray-400">Overall Score</div>
                   </div>
-                  <div className="bg-white/5 rounded-lg p-3">
-                    <div className="text-2xl font-bold text-purple-400">
+                  <div className="bg-white/5 rounded-xl p-4 border border-purple-500/30">
+                    <div className="text-3xl font-bold text-purple-400 mb-1">
                       {analysisResults.atsCompatibility || 80}
                     </div>
-                    <div className="text-xs text-gray-400">ATS Score</div>
+                    <div className="text-sm text-gray-400">ATS Compatibility</div>
                   </div>
-                  <div className="bg-white/5 rounded-lg p-3">
-                    <div className="text-2xl font-bold text-emerald-400">
+                  <div className="bg-white/5 rounded-xl p-4 border border-emerald-500/30">
+                    <div className="text-3xl font-bold text-emerald-400 mb-1">
                       {analysisResults.contentQuality || 70}
                     </div>
-                    <div className="text-xs text-gray-400">Content</div>
+                    <div className="text-sm text-gray-400">Content Quality</div>
+                  </div>
+                  <div className="bg-white/5 rounded-xl p-4 border border-pink-500/30">
+                    <div className="text-3xl font-bold text-pink-400 mb-1">
+                      {analysisResults.professionalPresentation || 75}
+                    </div>
+                    <div className="text-sm text-gray-400">Presentation</div>
                   </div>
                 </div>
               )}
-              
-              <p className="text-gray-400 text-sm">Redirecting to resume builder...</p>
+
+              {/* Key Strengths */}
+              {analysisResults?.keyStrengths?.length > 0 && (
+                <div className="bg-white/5 rounded-xl p-6 border border-white/10">
+                  <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                    <Star className="h-5 w-5 text-emerald-400" />
+                    Key Strengths
+                  </h3>
+                  <ul className="space-y-2">
+                    {analysisResults.keyStrengths.map((strength: string, i: number) => (
+                      <motion.li 
+                        key={i}
+                        initial={{ opacity: 0, x: -20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: i * 0.1 }}
+                        className="flex items-start gap-2 text-gray-300"
+                      >
+                        <CheckCircle className="h-5 w-5 text-emerald-400 flex-shrink-0 mt-0.5" />
+                        <span>{strength}</span>
+                      </motion.li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {/* Improvements */}
+              {analysisResults?.improvements?.length > 0 && (
+                <div className="bg-white/5 rounded-xl p-6 border border-white/10">
+                  <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                    <TrendingUp className="h-5 w-5 text-cyan-400" />
+                    Areas for Improvement
+                  </h3>
+                  <ul className="space-y-2">
+                    {analysisResults.improvements.map((improvement: string, i: number) => (
+                      <motion.li 
+                        key={i}
+                        initial={{ opacity: 0, x: -20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: i * 0.1 }}
+                        className="flex items-start gap-2 text-gray-300"
+                      >
+                        <ChevronRight className="h-5 w-5 text-cyan-400 flex-shrink-0 mt-0.5" />
+                        <span>{improvement}</span>
+                      </motion.li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {/* Recommendations */}
+              {analysisResults?.recommendations?.length > 0 && (
+                <div className="bg-white/5 rounded-xl p-6 border border-white/10">
+                  <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                    <Brain className="h-5 w-5 text-purple-400" />
+                    AI Recommendations
+                  </h3>
+                  <ul className="space-y-2">
+                    {analysisResults.recommendations.map((recommendation: string, i: number) => (
+                      <motion.li 
+                        key={i}
+                        initial={{ opacity: 0, x: -20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: i * 0.1 }}
+                        className="flex items-start gap-2 text-gray-300"
+                      >
+                        <Sparkles className="h-5 w-5 text-purple-400 flex-shrink-0 mt-0.5" />
+                        <span>{recommendation}</span>
+                      </motion.li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {/* Improved Summary */}
+              {analysisResults?.improvedSummary && (
+                <div className="bg-white/5 rounded-xl p-6 border border-white/10">
+                  <h3 className="text-lg font-semibold text-white mb-3 flex items-center gap-2">
+                    <FileText className="h-5 w-5 text-pink-400" />
+                    AI-Improved Summary
+                  </h3>
+                  <p className="text-gray-300 leading-relaxed">
+                    {analysisResults.improvedSummary}
+                  </p>
+                </div>
+              )}
+
+              {/* Continue Button */}
+              <div className="flex justify-center pt-4">
+                <Button
+                  onClick={handleContinueToBuild}
+                  className="bg-gradient-to-r from-purple-500 to-pink-600 hover:from-purple-600 hover:to-pink-700 text-white px-10 py-6 text-lg rounded-xl shadow-lg shadow-purple-500/20 hover:shadow-purple-500/40 transition-all"
+                >
+                  Continue to Resume Builder
+                  <ArrowRight className="h-5 w-5 ml-2" />
+                </Button>
+              </div>
             </div>
           ) : isAnalyzing ? (
             /* Analyzing State */
@@ -322,23 +497,13 @@ export default function ResumeAnalysisPage() {
                 </div>
               )}
               
-              <div className="flex gap-4 justify-center">
-                <Button
-                  onClick={handleSkipAnalysis}
-                  variant="outline"
-                  className="border-gray-600 text-gray-300 hover:bg-gray-800"
-                >
-                  <SkipForward className="h-4 w-4 mr-2" />
-                  Skip Analysis
-                </Button>
-                <Button
-                  onClick={handleStartAnalysis}
-                  className="bg-gradient-to-r from-purple-500 to-pink-600 hover:from-purple-600 hover:to-pink-700 text-white px-8"
-                >
-                  <Sparkles className="h-4 w-4 mr-2" />
-                  Start AI Analysis
-                </Button>
-              </div>
+              <Button
+                onClick={handleStartAnalysis}
+                className="bg-gradient-to-r from-purple-500 to-pink-600 hover:from-purple-600 hover:to-pink-700 text-white px-10 py-6 text-lg rounded-xl shadow-lg shadow-purple-500/20 hover:shadow-purple-500/40 transition-all"
+              >
+                <Sparkles className="h-5 w-5 mr-2" />
+                Start AI Analysis
+              </Button>
             </div>
           )}
 
@@ -402,4 +567,3 @@ export default function ResumeAnalysisPage() {
     </div>
   );
 }
-
