@@ -84,6 +84,19 @@ export function PlacesAutocomplete({ value, placeholder, disabled, onChange, onS
             }
           }),
         })
+        
+        if (!res.ok) {
+          // Silently fail if API key is invalid or API is not enabled
+          // This prevents console errors when API is not configured
+          if (res.status === 403 || res.status === 401) {
+            console.warn('Google Places API not available - check API key configuration')
+          }
+          setPredictions([])
+          setOpen(false)
+          if (!cancelled) setLoading(false)
+          return
+        }
+        
         const data = await res.json()
         if (cancelled) return
         const suggestions: Suggestion[] = (data.suggestions || [])
@@ -94,7 +107,8 @@ export function PlacesAutocomplete({ value, placeholder, disabled, onChange, onS
           .filter((s: Suggestion) => s.place_id && s.description)
         setPredictions(suggestions)
         setOpen(suggestions.length > 0)
-      } catch {
+      } catch (error) {
+        // Silently handle errors - don't spam console
         setPredictions([])
         setOpen(false)
       } finally {
