@@ -1610,8 +1610,8 @@ export default function ResumeBuilderPage() {
                           animate={{ opacity: 1, scale: 1 }}
                           className="max-w-sm mx-auto"
                         >
-                          <Card className="glass-card border-green-500/30 bg-green-500/5 p-4">
-                            <CardContent className="p-0">
+                          <div className="relative group overflow-hidden rounded-xl border border-green-500/30 bg-green-500/5 backdrop-blur-xl p-4">
+                            <div className="relative z-10">
                               <div className="flex items-center space-x-3">
                                 <div className="w-6 h-6 bg-green-500/20 rounded-full flex items-center justify-center">
                                   <Check className="h-3 w-3 text-green-400" />
