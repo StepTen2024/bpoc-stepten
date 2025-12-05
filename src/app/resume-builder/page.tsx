@@ -698,8 +698,10 @@ export default function ResumeBuilderPage() {
       saveToLocalStorage('bpoc_processed_files', processedFiles);
       saveToLocalStorage('bpoc_processed_resumes', processedResumes);
 
-      // Navigate to analysis page
-      router.push('/resume-builder/analysis');
+      // Navigate to analysis page - REMOVED: This page is now self-contained
+      // router.push('/resume-builder/analysis');
+      // Instead, trigger the analysis flow on this page
+      console.log('✅ Data saved, ready for analysis. This page should handle analysis internally.');
       
     } catch (error) {
       console.error('Error saving upload data:', error);
@@ -1078,7 +1080,7 @@ export default function ResumeBuilderPage() {
             </div>
           </div>
           <DialogFooter>
-            <Button onClick={() => { setShowExtractedModal(false); router.push('/resume-builder/analysis') }} className="bg-cyan-600 hover:bg-cyan-700">
+            <Button onClick={() => { setShowExtractedModal(false); /* Stay on this page - self-contained */ }} className="bg-cyan-600 hover:bg-cyan-700">
               Continue to Analysis
             </Button>
             <Button
@@ -1128,7 +1130,7 @@ export default function ResumeBuilderPage() {
             </div>
           </div>
           <DialogFooter>
-            <Button onClick={() => { setShowGeneratedModal(false); router.push('/resume-builder/build') }} className="bg-cyan-600 hover:bg-cyan-700">
+            <Button onClick={() => { setShowGeneratedModal(false); /* Stay on this page - self-contained */ }} className="bg-cyan-600 hover:bg-cyan-700">
               Continue Building Resume
             </Button>
             <Button
@@ -1191,7 +1193,7 @@ export default function ResumeBuilderPage() {
             </div>
           </div>
           <DialogFooter>
-            <Button onClick={() => { setShowAnalysisModal(false); router.push('/resume-builder/analysis') }} className="bg-cyan-600 hover:bg-cyan-700">
+            <Button onClick={() => { setShowAnalysisModal(false); /* Stay on this page - self-contained */ }} className="bg-cyan-600 hover:bg-cyan-700">
               Continue Building Resume
             </Button>
             <Button
