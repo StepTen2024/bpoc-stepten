@@ -1378,10 +1378,10 @@ export default function ResumeBuilderPage() {
     
     switch (action) {
       case 'career-tools':
-        router.push('/career-tools/games');
+        router.push('/candidate/games');
         break;
       case 'jobs':
-        router.push('/jobs/job-matching');
+        router.push('/candidate/jobs');
         break;
       case 'view-resume':
         if (savedResumeUrl) {
