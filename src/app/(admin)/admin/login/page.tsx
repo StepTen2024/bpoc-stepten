@@ -7,6 +7,7 @@ import { Shield, Mail, Lock, Eye, EyeOff, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/shared/ui/button';
 import { Input } from '@/components/shared/ui/input';
 import { supabase } from '@/lib/supabase';
+import Link from 'next/link';
 
 export default function AdminLoginPage() {
   const router = useRouter();
@@ -156,7 +157,10 @@ export default function AdminLoginPage() {
 
           {/* Footer */}
           <p className="text-center text-gray-500 text-sm mt-6">
-            Only authorized BPOC administrators can access this panel
+            Need an account?{' '}
+            <Link href="/admin/signup" className="text-red-400 hover:text-red-300">
+              Create one
+            </Link>
           </p>
         </div>
       </motion.div>
