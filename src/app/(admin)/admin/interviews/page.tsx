@@ -3,12 +3,12 @@
 import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import AdminRouteGuard from '@/components/admin/AdminRouteGuard'
-import AdminLayout from '@/components/layout/AdminLayout'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Textarea } from '@/components/ui/textarea'
+import AdminLayout from '@/components/shared/layout/AdminLayout'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/shared/ui/card'
+import { Badge } from '@/components/shared/ui/badge'
+import { Button } from '@/components/shared/ui/button'
+import { Input } from '@/components/shared/ui/input'
+import { Textarea } from '@/components/shared/ui/textarea'
 import {
   Dialog,
   DialogContent,
@@ -16,15 +16,15 @@ import {
   DialogHeader,
   DialogTitle,
   DialogFooter,
-} from '@/components/ui/dialog'
+} from '@/components/shared/ui/dialog'
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select'
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+} from '@/components/shared/ui/select'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/shared/ui/avatar'
 import {
   MessageSquare,
   Clock,

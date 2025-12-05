@@ -4,8 +4,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 
 import { Suspense } from 'react';
 
-import Header from '@/components/layout/Header';
-import JobsCards from '@/components/sections/JobsCards';
+import Header from '@/components/shared/layout/Header';
+import JobsCards from '@/components/shared/sections/JobsCards';
 import { Briefcase, CheckCircle2, ArrowRight } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';

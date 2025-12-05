@@ -8,9 +8,9 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog'
-import { Button } from '@/components/ui/button'
-import { Progress } from '@/components/ui/progress'
+} from '@/components/shared/ui/dialog'
+import { Button } from '@/components/shared/ui/button'
+import { Progress } from '@/components/shared/ui/progress'
 import { CheckCircle2, Circle, ArrowRight } from 'lucide-react'
 
 interface ProfileCompletionModalProps {

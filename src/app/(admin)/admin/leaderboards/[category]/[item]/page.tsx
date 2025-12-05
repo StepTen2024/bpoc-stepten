@@ -18,16 +18,16 @@ import {
   ArrowUpDown,
   Filter
 } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/shared/ui/button'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/shared/ui/card'
+import { Badge } from '@/components/shared/ui/badge'
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select'
+} from '@/components/shared/ui/select'
 import {
   Table,
   TableBody,
@@ -35,9 +35,9 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/ui/table'
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import AdminLayout from '@/components/layout/AdminLayout'
+} from '@/components/shared/ui/table'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/shared/ui/avatar'
+import AdminLayout from '@/components/shared/layout/AdminLayout'
 
 // Mock data - in real app, this would come from API
 const mockLeaderboardData = {

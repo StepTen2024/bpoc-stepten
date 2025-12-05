@@ -44,17 +44,17 @@ if (typeof document !== 'undefined') {
   `
   document.head.appendChild(style)
 }
-import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
-import { Input } from '@/components/ui/input'
+import { Button } from '@/components/shared/ui/button'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/shared/ui/card'
+import { Badge } from '@/components/shared/ui/badge'
+import { Input } from '@/components/shared/ui/input'
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select'
+} from '@/components/shared/ui/select'
 import {
   Table,
   TableBody,
@@ -62,8 +62,8 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table"
-import AdminLayout from '@/components/layout/AdminLayout'
+} from "@/components/shared/ui/table"
+import AdminLayout from '@/components/shared/layout/AdminLayout'
 import { generateInitials } from '@/lib/utils'
 // Removed actions dropdown since delete is not supported
 import {
@@ -71,7 +71,7 @@ import {
 	DialogContent,
 	DialogHeader,
 	DialogTitle,
-} from '@/components/ui/dialog'
+} from '@/components/shared/ui/dialog'
 
 const GAME_LABELS: Record<string, string> = {
 	'typing-hero': 'Typing Hero',

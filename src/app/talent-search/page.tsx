@@ -2,11 +2,11 @@
 
 import { motion } from 'framer-motion'
 import { Search, RefreshCw, User, Mail, Calendar, MapPin, Eye, Star, Users, Trophy, Filter, Check } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Card, CardContent } from '@/components/ui/card'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import Header from '@/components/layout/Header'
+import { Button } from '@/components/shared/ui/button'
+import { Input } from '@/components/shared/ui/input'
+import { Card, CardContent } from '@/components/shared/ui/card'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/shared/ui/select'
+import Header from '@/components/shared/layout/Header'
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 

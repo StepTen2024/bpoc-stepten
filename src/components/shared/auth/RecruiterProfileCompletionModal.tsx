@@ -4,24 +4,24 @@ import { useState, useEffect, useRef } from 'react'
 import { Loader as GoogleMapsLoader } from '@googlemaps/js-api-loader'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useAuth } from '@/contexts/AuthContext'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import PlacesAutocomplete from '@/components/ui/places-autocomplete'
-import { Textarea } from '@/components/ui/textarea'
+import { Button } from '@/components/shared/ui/button'
+import { Input } from '@/components/shared/ui/input'
+import PlacesAutocomplete from '@/components/shared/ui/places-autocomplete'
+import { Textarea } from '@/components/shared/ui/textarea'
 import { 
   Dialog,
   DialogContent,
   DialogDescription,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog'
+} from '@/components/shared/ui/dialog'
 import { 
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select'
+} from '@/components/shared/ui/select'
 import { 
   User, 
   MapPin, 

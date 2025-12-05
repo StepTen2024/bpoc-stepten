@@ -12,8 +12,8 @@ import {
   Edit,
   Trash2
 } from 'lucide-react'
-import { toast } from '@/components/ui/toast'
-import { Button } from '@/components/ui/button'
+import { toast } from '@/components/shared/ui/toast'
+import { Button } from '@/components/shared/ui/button'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -23,10 +23,10 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from '@/components/ui/alert-dialog'
-import { Input } from '@/components/ui/input'
-import { Badge } from '@/components/ui/badge'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+} from '@/components/shared/ui/alert-dialog'
+import { Input } from '@/components/shared/ui/input'
+import { Badge } from '@/components/shared/ui/badge'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/shared/ui/card'
 import {
   Table,
   TableBody,
@@ -34,7 +34,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/ui/table'
+} from '@/components/shared/ui/table'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -42,11 +42,11 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import AdminLayout from '@/components/layout/AdminLayout'
+} from '@/components/shared/ui/dropdown-menu'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/shared/ui/avatar'
+import AdminLayout from '@/components/shared/layout/AdminLayout'
 import { ChevronDown } from 'lucide-react'
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/shared/ui/dialog'
 import { useAuth } from '@/contexts/AuthContext'
 
 interface User {

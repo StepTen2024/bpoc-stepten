@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { useAuth } from '@/contexts/AuthContext'
 import { supabase } from '@/lib/supabase'
-import { Button } from '@/components/ui/button'
+import { Button } from '@/components/shared/ui/button'
 import { 
   Dialog,
   DialogContent,
@@ -12,8 +12,8 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog'
-import { Separator } from '@/components/ui/separator'
+} from '@/components/shared/ui/dialog'
+import { Separator } from '@/components/shared/ui/separator'
 import { 
   UserPlus, 
   Mail, 

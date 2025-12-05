@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Button } from '@/components/ui/button';
+import { Button } from '@/components/shared/ui/button';
 import { 
   FileText,
   Plus,
@@ -14,10 +14,10 @@ import {
   Building2,
   Trash2
 } from 'lucide-react';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { AlertDialog, AlertDialogAction, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
-import RecruiterSignInModal from '@/components/auth/RecruiterSignInModal';
-import RecruiterSignUpForm from '@/components/auth/RecruiterSignUpForm';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/shared/ui/dialog';
+import { AlertDialog, AlertDialogAction, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/shared/ui/alert-dialog';
+import RecruiterSignInModal from '@/components/shared/auth/RecruiterSignInModal';
+import RecruiterSignUpForm from '@/components/shared/auth/RecruiterSignUpForm';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase';
 

@@ -1,8 +1,8 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import Header from '@/components/layout/Header';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import Header from '@/components/shared/layout/Header';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/shared/ui/card';
 
 
 import { 

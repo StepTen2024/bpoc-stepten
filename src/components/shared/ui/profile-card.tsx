@@ -4,7 +4,7 @@ import { motion } from 'framer-motion';
 import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 // Removed Card wrappers to avoid double containers in Profile tab
-import { Button } from '@/components/ui/button';
+import { Button } from '@/components/shared/ui/button';
 
 import { 
   Edit3,
@@ -19,10 +19,10 @@ import {
   Heart,
   FileText
 } from 'lucide-react';
-import PlacesAutocomplete from '@/components/ui/places-autocomplete';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import PlacesAutocomplete from '@/components/shared/ui/places-autocomplete';
+import { Input } from '@/components/shared/ui/input';
+import { Textarea } from '@/components/shared/ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/shared/ui/select';
 import { useAuth } from '@/contexts/AuthContext';
 import { getSessionToken } from '@/lib/auth-helpers';
 import { uploadProfilePhoto, optimizeImage } from '@/lib/storage';

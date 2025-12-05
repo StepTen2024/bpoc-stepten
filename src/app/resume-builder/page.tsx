@@ -4,19 +4,19 @@ import { useState, useCallback, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { Upload, X, FileText, Image, AlertCircle, Check, Plus, Sparkles, Brain, ExternalLink } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Badge } from '@/components/ui/badge';
-import { Progress } from '@/components/ui/progress';
+import { Button } from '@/components/shared/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/shared/ui/card';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/shared/ui/dialog';
+import { Badge } from '@/components/shared/ui/badge';
+import { Progress } from '@/components/shared/ui/progress';
 import { PacmanLoader } from 'react-spinners';
-import PlatformIcon from '@/components/ui/platform-icon';
+import PlatformIcon from '@/components/shared/ui/platform-icon';
 import { isValidFileType, categorizeFile, isValidUrl, categorizePortfolioLink, saveToLocalStorage, generateSessionId, fileToBase64, formatFileSize, processResumeFile, ProcessedResume, validateProcessedResume } from '@/lib/utils';
 import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
 import { getSessionToken } from '@/lib/auth-helpers';
-import { toast } from '@/components/ui/toast';
-import Header from '@/components/layout/Header';
+import { toast } from '@/components/shared/ui/toast';
+import Header from '@/components/shared/layout/Header';
 
 export default function ResumeBuilderPage() {
   const router = useRouter();

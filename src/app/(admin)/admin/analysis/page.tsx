@@ -2,14 +2,14 @@
 
 import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
-import AdminLayout from '@/components/layout/AdminLayout'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
-import { Progress } from '@/components/ui/progress'
-import { Input } from '@/components/ui/input'
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { toast } from '@/components/ui/toast'
+import AdminLayout from '@/components/shared/layout/AdminLayout'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/shared/ui/card'
+import { Button } from '@/components/shared/ui/button'
+import { Badge } from '@/components/shared/ui/badge'
+import { Progress } from '@/components/shared/ui/progress'
+import { Input } from '@/components/shared/ui/input'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/shared/ui/avatar'
+import { toast } from '@/components/shared/ui/toast'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -19,7 +19,7 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from '@/components/ui/alert-dialog'
+} from '@/components/shared/ui/alert-dialog'
 import {
   Table,
   TableBody,
@@ -27,14 +27,14 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/ui/table'
+} from '@/components/shared/ui/table'
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
+} from '@/components/shared/ui/dropdown-menu'
 import { 
   BarChart3, 
   TrendingUp, 

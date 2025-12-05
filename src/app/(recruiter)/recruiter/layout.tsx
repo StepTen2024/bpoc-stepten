@@ -3,8 +3,8 @@
 import { useEffect, useState } from 'react';
 import { usePathname } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
-import RecruiterSidebar from '@/components/layout/RecruiterSidebar';
-import RecruiterFooter from '@/components/layout/RecruiterFooter';
+import RecruiterSidebar from '@/components/shared/layout/RecruiterSidebar';
+import RecruiterFooter from '@/components/shared/layout/RecruiterFooter';
 import { cn } from '@/lib/utils';
 
 export default function RecruiterLayout({

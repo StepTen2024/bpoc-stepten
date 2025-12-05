@@ -2,7 +2,7 @@
 
 import { motion } from 'framer-motion'
 import { Shield } from 'lucide-react'
-import Header from '@/components/layout/Header'
+import Header from '@/components/shared/layout/Header'
 
 export default function PrivacyPolicyPage() {
   return (

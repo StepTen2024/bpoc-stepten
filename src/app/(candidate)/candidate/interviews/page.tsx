@@ -1,6 +1,6 @@
 'use client'
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/shared/ui/card'
 import { MessageSquare, Calendar, Clock } from 'lucide-react'
 
 export default function CandidateInterviewsPage() {

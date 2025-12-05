@@ -3,10 +3,10 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { AdminProvider } from "@/contexts/AdminContext";
-import BackToTopButton from "@/components/ui/back-to-top";
-import Footer from "@/components/layout/Footer";
-import ClientConditionalFooter from "@/components/layout/ClientConditionalFooter";
-import { ToastProvider } from "@/components/ui/toast";
+import BackToTopButton from "@/components/shared/ui/back-to-top";
+import Footer from "@/components/shared/layout/Footer";
+import ClientConditionalFooter from "@/components/shared/layout/ClientConditionalFooter";
+import { ToastProvider } from "@/components/shared/ui/toast";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",

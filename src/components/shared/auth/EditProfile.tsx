@@ -3,16 +3,16 @@
 import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { useAuth } from '@/contexts/AuthContext'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
+import { Button } from '@/components/shared/ui/button'
+import { Input } from '@/components/shared/ui/input'
 import { 
   Dialog,
   DialogContent,
   DialogDescription,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog'
-import { Separator } from '@/components/ui/separator'
+} from '@/components/shared/ui/dialog'
+import { Separator } from '@/components/shared/ui/separator'
 import { 
   User, 
   Mail, 

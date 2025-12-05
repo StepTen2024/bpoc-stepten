@@ -14,9 +14,9 @@ import {
   Zap,
   Sparkles
 } from 'lucide-react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Progress } from '@/components/ui/progress';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/shared/ui/card';
+import { Badge } from '@/components/shared/ui/badge';
+import { Progress } from '@/components/shared/ui/progress';
 import { ProcessedResume, validateResumeProcessing, extractResumeInsights } from '@/lib/utils';
 
 interface ResumeProcessingStatusProps {

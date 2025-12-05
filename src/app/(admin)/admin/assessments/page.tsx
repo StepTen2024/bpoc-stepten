@@ -2,8 +2,8 @@
 
 import { motion } from 'framer-motion'
 import { Wrench, Construction } from 'lucide-react'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import AdminLayout from '@/components/layout/AdminLayout'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/shared/ui/card'
+import AdminLayout from '@/components/shared/layout/AdminLayout'
 
 export default function AssessmentsPage() {
   return (

@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import { Input } from '@/components/ui/input'
+import { Input } from '@/components/shared/ui/input'
 
 type SelectedPlace = {
   description: string

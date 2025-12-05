@@ -17,9 +17,9 @@ import {
   Bell,
   Building2
 } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Separator } from '@/components/ui/separator';
+import { Button } from '@/components/shared/ui/button';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/shared/ui/avatar';
+import { Separator } from '@/components/shared/ui/separator';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -29,7 +29,7 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
+} from '@/components/shared/ui/alert-dialog';
 import { cn } from '@/lib/utils';
 
 interface SidebarItem {

@@ -23,17 +23,17 @@ import {
   BarChart3,
   Loader2
 } from 'lucide-react'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
-import { Input } from '@/components/ui/input'
-import { toast } from '@/components/ui/toast'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/shared/ui/card'
+import { Button } from '@/components/shared/ui/button'
+import { Badge } from '@/components/shared/ui/badge'
+import { Input } from '@/components/shared/ui/input'
+import { toast } from '@/components/shared/ui/toast'
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from '@/components/ui/tooltip'
+} from '@/components/shared/ui/tooltip'
 
 import {
   DropdownMenu,
@@ -41,8 +41,8 @@ import {
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+} from '@/components/shared/ui/dropdown-menu'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/shared/ui/avatar'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -52,9 +52,9 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from '@/components/ui/alert-dialog'
+} from '@/components/shared/ui/alert-dialog'
 
-import AdminLayout from '@/components/layout/AdminLayout'
+import AdminLayout from '@/components/shared/layout/AdminLayout'
 
 interface Resume {
   id: string

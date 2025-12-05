@@ -2,10 +2,10 @@
 
 import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/shared/ui/button';
+import { Input } from '@/components/shared/ui/input';
+import { Avatar, AvatarFallback } from '@/components/shared/ui/avatar';
+import { Badge } from '@/components/shared/ui/badge';
 import { Search, Send, MoreVertical, Phone, Video } from 'lucide-react';
 
 interface Message {

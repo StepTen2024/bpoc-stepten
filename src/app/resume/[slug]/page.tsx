@@ -167,19 +167,19 @@ import {
   Instagram,
   Linkedin
 } from 'lucide-react';
-import Header from '@/components/layout/Header';
+import Header from '@/components/shared/layout/Header';
 import { useAuth } from '@/contexts/AuthContext';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Progress } from '@/components/ui/progress';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Separator } from '@/components/ui/separator';
-import { ScrollArea } from '@/components/ui/scroll-area';
-// import { Alert, AlertDescription } from '@/components/ui/alert';
-import { toast } from '@/components/ui/toast';
+import { Button } from '@/components/shared/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/shared/ui/card';
+import { Badge } from '@/components/shared/ui/badge';
+import { Progress } from '@/components/shared/ui/progress';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/shared/ui/dialog';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/shared/ui/dropdown-menu';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/shared/ui/tabs';
+import { Separator } from '@/components/shared/ui/separator';
+import { ScrollArea } from '@/components/shared/ui/scroll-area';
+// import { Alert, AlertDescription } from '@/components/shared/ui/alert';
+import { toast } from '@/components/shared/ui/toast';
 import { formatNumber, generateInitials } from '@/lib/utils';
 
 interface SavedResume {

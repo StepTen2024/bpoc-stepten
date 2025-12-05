@@ -3,10 +3,10 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Button } from '@/components/shared/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/shared/ui/card';
+import { Badge } from '@/components/shared/ui/badge';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/shared/ui/tabs';
 import { 
   Trophy,
   Medal,
@@ -29,9 +29,9 @@ import {
   Minus,
   Building2
 } from 'lucide-react';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import RecruiterSignInModal from '@/components/auth/RecruiterSignInModal';
-import RecruiterSignUpForm from '@/components/auth/RecruiterSignUpForm';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/shared/ui/dialog';
+import RecruiterSignInModal from '@/components/shared/auth/RecruiterSignInModal';
+import RecruiterSignUpForm from '@/components/shared/auth/RecruiterSignUpForm';
 
 export default function LeaderboardPage() {
   const router = useRouter();

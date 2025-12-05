@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { toast } from '@/components/ui/toast';
+import { toast } from '@/components/shared/ui/toast';
 import { motion } from 'framer-motion';
 import { 
   ArrowLeft, 
@@ -30,19 +30,19 @@ import {
   MapPin,
   Menu
 } from 'lucide-react';
-import LoadingScreen from '@/components/ui/loading-screen';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import LoadingScreen from '@/components/shared/ui/loading-screen';
+import { Button } from '@/components/shared/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/shared/ui/card';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/shared/ui/dialog';
 // (duplicate dialog import removed)
-import { Badge } from '@/components/ui/badge';
-import { Progress } from '@/components/ui/progress';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Separator } from '@/components/ui/separator';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
+import { Badge } from '@/components/shared/ui/badge';
+import { Progress } from '@/components/shared/ui/progress';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/shared/ui/tabs';
+import { Separator } from '@/components/shared/ui/separator';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/shared/ui/alert-dialog';
 import { getFromLocalStorage, cleanupLocalStorageAfterSave } from '@/lib/utils';
 import { getSessionToken } from '@/lib/auth-helpers';
-import Header from '@/components/layout/Header';
+import Header from '@/components/shared/layout/Header';
 import { useAuth } from '@/contexts/AuthContext';
 
 interface AnalysisData {

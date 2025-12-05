@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { useSearchParams, useRouter, useParams } from 'next/navigation';
 import { motion } from 'framer-motion';
-import PlacesAutocomplete from '@/components/ui/places-autocomplete';
+import PlacesAutocomplete from '@/components/shared/ui/places-autocomplete';
 import { 
   User,
   Briefcase,
@@ -36,13 +36,13 @@ import {
   ChevronDown,
   Loader2
 } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Separator } from '@/components/ui/separator';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
-import LoadingScreen from '@/components/ui/loading-screen';
-import Header from '@/components/layout/Header';
+import { Button } from '@/components/shared/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/shared/ui/card';
+import { Badge } from '@/components/shared/ui/badge';
+import { Separator } from '@/components/shared/ui/separator';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/shared/ui/dialog';
+import LoadingScreen from '@/components/shared/ui/loading-screen';
+import Header from '@/components/shared/layout/Header';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
 import { uploadProfilePhoto, optimizeImage } from '@/lib/storage';

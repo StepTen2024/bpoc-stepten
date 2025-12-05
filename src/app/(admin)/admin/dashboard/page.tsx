@@ -5,11 +5,11 @@ import { motion } from 'framer-motion'
 import { useAdmin } from '@/contexts/AdminContext'
 import { useAuth } from '@/contexts/AuthContext'
 import AdminRouteGuard from '@/components/admin/AdminRouteGuard'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
-import { LineChartComponent, AreaChartComponent, BarChartComponent } from '@/components/ui/charts'
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/shared/ui/card'
+import { Badge } from '@/components/shared/ui/badge'
+import { Button } from '@/components/shared/ui/button'
+import { LineChartComponent, AreaChartComponent, BarChartComponent } from '@/components/shared/ui/charts'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/shared/ui/avatar'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -17,7 +17,7 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
+} from '@/components/shared/ui/dropdown-menu'
 import { 
   Users, 
   FileText,
@@ -29,7 +29,7 @@ import {
   Briefcase,
   ChevronDown
 } from 'lucide-react'
-import AdminLayout from '@/components/layout/AdminLayout'
+import AdminLayout from '@/components/shared/layout/AdminLayout'
 
 export default function DashboardPage() {
   const { user } = useAuth()

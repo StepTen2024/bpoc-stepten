@@ -4,14 +4,14 @@ import { motion } from 'framer-motion'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useAuth } from '@/contexts/AuthContext'
 import { useState, useEffect, Suspense } from 'react'
-import Header from '@/components/layout/Header'
-import Hero from '@/components/sections/Hero'
-import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from '@/components/ui/table'
-import { Badge } from '@/components/ui/badge'
-import { Progress } from '@/components/ui/progress'
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import Header from '@/components/shared/layout/Header'
+import Hero from '@/components/shared/sections/Hero'
+import { Button } from '@/components/shared/ui/button'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/shared/ui/card'
+import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from '@/components/shared/ui/table'
+import { Badge } from '@/components/shared/ui/badge'
+import { Progress } from '@/components/shared/ui/progress'
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/shared/ui/dialog'
 import { 
   ArrowRight,
   ChevronLeft,
@@ -42,8 +42,8 @@ import {
   Building2
 } from 'lucide-react'
 import { formatNumber, generateInitials } from '@/lib/utils'
-import ProfileCompletionModal from '@/components/auth/ProfileCompletionModal'
-import { AnimatedLogo } from '@/components/ui/AnimatedLogo'
+import ProfileCompletionModal from '@/components/shared/auth/ProfileCompletionModal'
+import { AnimatedLogo } from '@/components/shared/ui/AnimatedLogo'
 
 function HomePageContent() {
   const router = useRouter()

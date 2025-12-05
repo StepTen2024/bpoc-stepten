@@ -2,11 +2,11 @@
 
 import { motion } from 'framer-motion';
 import { useState, useEffect, useRef, useMemo, Suspense } from 'react';
-import Header from '@/components/layout/Header';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Input } from '@/components/ui/input';
+import Header from '@/components/shared/layout/Header';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/shared/ui/card';
+import { Button } from '@/components/shared/ui/button';
+import { Badge } from '@/components/shared/ui/badge';
+import { Input } from '@/components/shared/ui/input';
 
 import {
   Dialog,
@@ -14,9 +14,9 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog';
+} from '@/components/shared/ui/dialog';
 import { VisuallyHidden } from '@radix-ui/react-visually-hidden';
-import { ScrollArea } from '@/components/ui/scroll-area';
+import { ScrollArea } from '@/components/shared/ui/scroll-area';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -26,7 +26,7 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
+} from '@/components/shared/ui/alert-dialog';
 import { 
   ArrowLeft,
   Target,

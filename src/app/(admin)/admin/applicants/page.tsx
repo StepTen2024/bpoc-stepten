@@ -1,15 +1,15 @@
 "use client"
 
 import { useEffect, useMemo, useState } from 'react'
-import AdminLayout from '@/components/layout/AdminLayout'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Badge } from '@/components/ui/badge'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Separator } from '@/components/ui/separator'
-import { Avatar, AvatarFallback } from '@/components/ui/avatar'
-import { Skeleton } from '@/components/ui/skeleton'
+import AdminLayout from '@/components/shared/layout/AdminLayout'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/shared/ui/card'
+import { Button } from '@/components/shared/ui/button'
+import { Input } from '@/components/shared/ui/input'
+import { Badge } from '@/components/shared/ui/badge'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/shared/ui/select'
+import { Separator } from '@/components/shared/ui/separator'
+import { Avatar, AvatarFallback } from '@/components/shared/ui/avatar'
+import { Skeleton } from '@/components/shared/ui/skeleton'
 import { 
   Search, 
   Users, 

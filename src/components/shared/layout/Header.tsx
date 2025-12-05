@@ -25,9 +25,9 @@ import {
   Brain,
   Calculator
 } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
-import { Sheet, SheetContent, SheetTrigger, SheetTitle } from '@/components/ui/sheet'
+import { Button } from '@/components/shared/ui/button'
+import { Badge } from '@/components/shared/ui/badge'
+import { Sheet, SheetContent, SheetTrigger, SheetTitle } from '@/components/shared/ui/sheet'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -38,7 +38,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from '@/components/ui/alert-dialog'
+} from '@/components/shared/ui/alert-dialog'
 
 import { cn } from '@/lib/utils'
 import LoginForm from '@/components/auth/LoginForm'
@@ -48,7 +48,7 @@ import { useAuth } from '@/contexts/AuthContext'
 import { useAdmin } from '@/contexts/AdminContext'
 import { getSessionToken } from '@/lib/auth-helpers'
 
-import { AnimatedLogo } from '@/components/ui/AnimatedLogo'
+import { AnimatedLogo } from '@/components/shared/ui/AnimatedLogo'
 
 interface HeaderProps {
   className?: string

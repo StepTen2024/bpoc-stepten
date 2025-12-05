@@ -3,7 +3,7 @@
 import { motion } from 'framer-motion'
 import { FileText } from 'lucide-react'
 import { Suspense } from 'react'
-import Header from '@/components/layout/Header'
+import Header from '@/components/shared/layout/Header'
 
 export default function TermsAndConditionsPage() {
   return (

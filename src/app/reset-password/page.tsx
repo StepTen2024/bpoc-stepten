@@ -2,11 +2,11 @@
 
 import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
-import Header from '@/components/layout/Header'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Separator } from '@/components/ui/separator'
+import Header from '@/components/shared/layout/Header'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/shared/ui/card'
+import { Button } from '@/components/shared/ui/button'
+import { Input } from '@/components/shared/ui/input'
+import { Separator } from '@/components/shared/ui/separator'
 import { Eye, EyeOff, Lock, CheckCircle, XCircle, LogIn } from 'lucide-react'
 import { updatePassword, supabase } from '@/lib/supabase'
 

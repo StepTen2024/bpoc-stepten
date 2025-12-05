@@ -3,7 +3,7 @@
 import { useAdmin } from '@/contexts/AdminContext'
 import { useRouter } from 'next/navigation'
 import { useEffect } from 'react'
-import LoadingScreen from '@/components/ui/loading-screen'
+import LoadingScreen from '@/components/shared/ui/loading-screen'
 
 interface AdminRouteGuardProps {
   children: React.ReactNode

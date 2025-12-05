@@ -3,9 +3,9 @@
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/shared/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/shared/ui/card';
+import { Badge } from '@/components/shared/ui/badge';
 import { 
   Building2, 
   Users, 
@@ -15,10 +15,10 @@ import {
   ChevronUp,
   RefreshCw
 } from 'lucide-react';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import RecruiterSignInModal from '@/components/auth/RecruiterSignInModal';
-import RecruiterSignUpForm from '@/components/auth/RecruiterSignUpForm';
-import RecruiterProfileCompletionModal from '@/components/auth/RecruiterProfileCompletionModal';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/shared/ui/dialog';
+import RecruiterSignInModal from '@/components/shared/auth/RecruiterSignInModal';
+import RecruiterSignUpForm from '@/components/shared/auth/RecruiterSignUpForm';
+import RecruiterProfileCompletionModal from '@/components/shared/auth/RecruiterProfileCompletionModal';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase';
 

@@ -27,20 +27,20 @@ import {
   User,
   Loader2
 } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { Button } from '@/components/shared/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/shared/ui/card';
+import { Badge } from '@/components/shared/ui/badge';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/shared/ui/alert-dialog';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/shared/ui/dialog';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/shared/ui/tooltip';
 import { useRouter } from 'next/navigation';
-import LoadingScreen from '@/components/ui/loading-screen';
-import Header from '@/components/layout/Header';
+import LoadingScreen from '@/components/shared/ui/loading-screen';
+import Header from '@/components/shared/layout/Header';
 import { useAuth } from '@/contexts/AuthContext';
 import { getSessionToken } from '@/lib/auth-helpers';
 import { cleanupLocalStorageAfterSave } from '@/lib/utils';
 import { supabase } from '@/lib/supabase';
-import { toast } from '@/components/ui/toast';
+import { toast } from '@/components/shared/ui/toast';
 import Cropper from 'react-easy-crop';
 import { getCroppedImg } from '@/lib/image-crop-utils';
 
