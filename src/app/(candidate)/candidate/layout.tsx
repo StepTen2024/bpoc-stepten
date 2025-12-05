@@ -1,46 +1,21 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { usePathname, useRouter } from 'next/navigation'
-import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { useAuth } from '@/contexts/AuthContext'
 import { supabase } from '@/lib/supabase'
-import { 
-  LayoutDashboard, 
-  User, 
-  FileText, 
-  Gamepad2, 
-  Briefcase, 
-  ClipboardList,
-  MessageSquare,
-  Gift,
-  Menu,
-  X,
-  LogOut
-} from 'lucide-react'
+import { CandidateSidebar } from '@/components/candidate/CandidateSidebar'
+import { Menu, X } from 'lucide-react'
 import { Button } from '@/components/shared/ui/button'
-import { cn } from '@/lib/utils'
-
-const sidebarItems = [
-  { href: '/candidate/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { href: '/candidate/profile', label: 'Profile', icon: User },
-  { href: '/candidate/resume', label: 'Resume Builder', icon: FileText },
-  { href: '/candidate/games', label: 'Games', icon: Gamepad2 },
-  { href: '/candidate/jobs', label: 'Jobs', icon: Briefcase },
-  { href: '/candidate/applications', label: 'Applications', icon: ClipboardList },
-  { href: '/candidate/interviews', label: 'Interviews', icon: MessageSquare },
-  { href: '/candidate/offers', label: 'Offers', icon: Gift },
-]
 
 export default function CandidateLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
-  const pathname = usePathname()
   const router = useRouter()
-  const { user, loading, signOut } = useAuth()
-  const [sidebarOpen, setSidebarOpen] = useState(false)
+  const { user, loading } = useAuth()
+  const [mobileOpen, setMobileOpen] = useState(false)
   const [profile, setProfile] = useState<any>(null)
   const [authChecked, setAuthChecked] = useState(false)
   const [isAuthenticated, setIsAuthenticated] = useState(false)
@@ -56,7 +31,7 @@ export default function CandidateLayout({
       if (user) {
         setIsAuthenticated(true)
         setAuthChecked(true)
-        fetchProfile()
+        fetchProfile(user.id)
         return
       }
 
@@ -67,7 +42,7 @@ export default function CandidateLayout({
           console.log('✅ Layout: Session found directly from Supabase')
           setIsAuthenticated(true)
           setAuthChecked(true)
-          fetchProfile()
+          fetchProfile(session.user.id)
           return
         }
       } catch (error) {
@@ -82,10 +57,10 @@ export default function CandidateLayout({
     checkAuth()
   }, [user, loading, router])
 
-  async function fetchProfile() {
-    if (!user?.id) return
+  async function fetchProfile(userId: string) {
+    if (!userId) return
     try {
-      const response = await fetch(`/api/user/profile?userId=${user.id}`)
+      const response = await fetch(`/api/user/profile?userId=${userId}`)
       if (response.ok) {
         const data = await response.json()
         setProfile(data.user)
@@ -95,18 +70,13 @@ export default function CandidateLayout({
     }
   }
 
-  const handleSignOut = async () => {
-    await signOut()
-    router.push('/')
-  }
-
   // Show loading state while checking auth
   if (loading || !authChecked) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-[#0B0B0D] flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading...</p>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-cyan-500 mx-auto"></div>
+          <p className="mt-4 text-gray-400">Loading Portal...</p>
         </div>
       </div>
     )
@@ -118,91 +88,40 @@ export default function CandidateLayout({
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-[#0B0B0D] text-gray-300">
       {/* Mobile Header */}
-      <div className="lg:hidden bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between">
-        <h1 className="text-lg font-semibold text-gray-900">Candidate Portal</h1>
+      <div className="lg:hidden bg-[#0B0B0D] border-b border-white/10 px-4 py-3 flex items-center justify-between sticky top-0 z-40">
+        <h1 className="text-lg font-bold bg-gradient-to-r from-cyan-400 to-purple-400 bg-clip-text text-transparent">
+          BPOC.IO
+        </h1>
         <Button
           variant="ghost"
           size="sm"
-          onClick={() => setSidebarOpen(!sidebarOpen)}
+          onClick={() => setMobileOpen(!mobileOpen)}
+          className="text-gray-400 hover:text-white"
         >
-          {sidebarOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+          {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
         </Button>
       </div>
 
-      <div className="flex">
-        {/* Sidebar */}
-        <aside
-          className={cn(
-            "fixed lg:static inset-y-0 left-0 z-50 w-64 bg-white border-r border-gray-200 transform transition-transform duration-200 ease-in-out",
-            sidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
-          )}
-        >
-          <div className="flex flex-col h-full">
-            {/* Logo/Header */}
-            <div className="p-6 border-b border-gray-200">
-              <h2 className="text-xl font-bold text-gray-900">Candidate Portal</h2>
-              <p className="text-sm text-gray-500 mt-1">
-                {profile?.first_name || 'Welcome'}
-              </p>
-            </div>
-
-            {/* Navigation */}
-            <nav className="flex-1 px-4 py-6 space-y-1 overflow-y-auto">
-              {sidebarItems.map((item) => {
-                const Icon = item.icon
-                const isActive = pathname === item.href || 
-                  (item.href !== '/candidate/dashboard' && pathname?.startsWith(item.href))
-                
-                return (
-                  <Link
-                    key={item.href}
-                    href={item.href}
-                    onClick={() => setSidebarOpen(false)}
-                    className={cn(
-                      "flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors",
-                      isActive
-                        ? "bg-blue-50 text-blue-700 font-medium"
-                        : "text-gray-700 hover:bg-gray-50"
-                    )}
-                  >
-                    <Icon className="h-5 w-5" />
-                    <span>{item.label}</span>
-                  </Link>
-                )
-              })}
-            </nav>
-
-            {/* Footer */}
-            <div className="p-4 border-t border-gray-200">
-              <Button
-                variant="ghost"
-                className="w-full justify-start text-gray-700 hover:text-red-600"
-                onClick={handleSignOut}
-              >
-                <LogOut className="h-5 w-5 mr-3" />
-                Sign Out
-              </Button>
-            </div>
-          </div>
-        </aside>
-
-        {/* Overlay for mobile */}
-        {sidebarOpen && (
-          <div
-            className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden"
-            onClick={() => setSidebarOpen(false)}
-          />
-        )}
+      <div className="flex h-screen overflow-hidden">
+        {/* Reusable Sidebar */}
+        <CandidateSidebar 
+          profile={profile}
+          mobileOpen={mobileOpen}
+          setMobileOpen={setMobileOpen}
+        />
 
         {/* Main Content */}
-        <main className="flex-1 lg:ml-0">
-          {children}
+        <main className="flex-1 overflow-y-auto relative">
+          {/* Background Gradient Orb */}
+          <div className="absolute top-0 left-0 w-full h-96 bg-cyan-500/5 blur-[100px] pointer-events-none" />
+          
+          <div className="relative z-10 p-4 md:p-8 max-w-7xl mx-auto">
+            {children}
+          </div>
         </main>
       </div>
     </div>
   )
 }
-
-

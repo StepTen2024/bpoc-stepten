@@ -6,7 +6,6 @@ import Link from 'next/link'
 import { useAuth } from '@/contexts/AuthContext'
 import { supabase } from '@/lib/supabase'
 import ProfileCompletionModal from '@/components/candidate/ProfileCompletionModal'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/shared/ui/card'
 import { Button } from '@/components/shared/ui/button'
 import { Badge } from '@/components/shared/ui/badge'
 import { 
@@ -18,9 +17,10 @@ import {
   CheckCircle2,
   Circle,
   ArrowRight,
-  Edit,
-  Play
+  Play,
+  Sparkles
 } from 'lucide-react'
+import { cn } from '@/lib/utils'
 
 interface ProfileData {
   id: string
@@ -54,15 +54,9 @@ export default function CandidateDashboardPage() {
 
   useEffect(() => {
     const checkAuth = async () => {
-      // First, wait for AuthContext to finish loading
-      if (loading) {
-        console.log('⏳ AuthContext still loading...')
-        return
-      }
+      if (loading) return
 
-      // If AuthContext has a user, use it
       if (user) {
-        console.log('✅ User found in AuthContext:', user.email)
         setCurrentUserId(user.id)
         setCheckingAuth(false)
         fetchProfile(user.id)
@@ -70,36 +64,25 @@ export default function CandidateDashboardPage() {
         return
       }
 
-      // If no user in AuthContext, check session directly from Supabase
-      console.log('🔍 No user in AuthContext, checking Supabase session directly...')
       try {
         const { data: { session }, error } = await supabase.auth.getSession()
         
-        if (error) {
-          console.error('❌ Error checking session:', error)
-          // Only redirect if there's a real error, not just missing session
-          if (error.message && !error.message.includes('session')) {
-            router.push('/')
-            return
-          }
+        if (error && error.message && !error.message.includes('session')) {
+          router.push('/')
+          return
         }
 
         if (session?.user) {
-          console.log('✅ Session found directly from Supabase:', session.user.email)
           setCurrentUserId(session.user.id)
-          // Session exists - load data immediately, don't wait
           setCheckingAuth(false)
           fetchProfile(session.user.id)
           fetchStats(session.user.id)
           return
         }
 
-        // No session found - redirect to home
-        console.log('❌ No session found, redirecting to home')
         router.push('/')
       } catch (error) {
-        console.error('❌ Error in auth check:', error)
-        // Don't redirect on catch - let it retry
+        console.error('Error in auth check:', error)
       }
     }
 
@@ -124,23 +107,18 @@ export default function CandidateDashboardPage() {
     try {
       setLoadingStats(true)
       
-      // Fetch profile completion
       const profileRes = await fetch(`/api/user/profile?userId=${userId}`)
       const profileData = profileRes.ok ? await profileRes.json() : null
       
-      // Fetch resume status
       const resumeRes = await fetch('/api/user/saved-resumes')
       const hasResume = resumeRes.ok
       
-      // Fetch games count (includes DISC and Typing)
       const gamesRes = await fetch('/api/user/games-count')
       const gamesData = gamesRes.ok ? await gamesRes.json() : { disc_count: 0, typing_count: 0 }
       
-      // Fetch applications count
       const appsRes = await fetch('/api/applications')
       const appsData = appsRes.ok ? await appsRes.json() : { applications: [] }
       
-      // Fetch job matches count
       const matchesRes = await fetch('/api/user/job-matches-count')
       const matchesData = matchesRes.ok ? await matchesRes.json() : { count: 0 }
 
@@ -164,10 +142,10 @@ export default function CandidateDashboardPage() {
 
   if (loading || loadingStats || checkingAuth || !currentUserId) {
     return (
-      <div className="p-8">
+      <div className="flex items-center justify-center h-64">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading dashboard...</p>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-cyan-500 mx-auto"></div>
+          <p className="mt-4 text-gray-400">Loading Dashboard...</p>
         </div>
       </div>
     )
@@ -178,25 +156,25 @@ export default function CandidateDashboardPage() {
       key: 'profile', 
       label: 'Complete Profile', 
       completed: stats?.profile_completion === 100,
-      href: '/settings'
+      href: '/candidate/profile'
     },
     { 
       key: 'disc', 
       label: 'Take DISC Assessment', 
       completed: stats?.has_disc || false,
-      href: '/career-tools/assessments/disc'
+      href: '/candidate/games'
     },
     { 
       key: 'resume', 
       label: 'Build Resume', 
       completed: stats?.has_resume || false,
-      href: '/resume-builder'
+      href: '/candidate/resume'
     },
     { 
       key: 'typing', 
       label: 'Complete Typing Test', 
       completed: stats?.has_typing || false,
-      href: '/career-tools/games/typing-hero'
+      href: '/candidate/games'
     },
   ]
 
@@ -211,180 +189,187 @@ export default function CandidateDashboardPage() {
         userId={currentUserId}
       />
 
-      <div className="p-8">
-        <div className="max-w-7xl mx-auto">
-          {/* Header */}
-          <div className="mb-8">
-            <h1 className="text-3xl font-bold text-gray-900">
-              Welcome back, {profile?.first_name || 'Candidate'}! 👋
+      <div className="space-y-8">
+        {/* Header */}
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div>
+            <h1 className="text-3xl font-bold text-white">
+              Welcome back, <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-purple-400">{profile?.first_name || 'Candidate'}</span>! 👋
             </h1>
-            <p className="mt-1 text-gray-600">
-              Your career journey dashboard
+            <p className="mt-1 text-gray-400">
+              Here's your career progress overview
             </p>
           </div>
-        {/* Profile Completion Card */}
-        <Card className="mb-8 border-2 border-blue-200 bg-gradient-to-r from-blue-50 to-indigo-50">
-          <CardHeader>
-            <CardTitle className="flex items-center justify-between">
-              <span>Profile Completion</span>
-              <Badge variant={stats?.profile_completion === 100 ? "default" : "secondary"}>
-                {stats?.profile_completion || 0}%
-              </Badge>
-            </CardTitle>
-            <CardDescription>
-              Complete your profile to unlock more opportunities
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
+          <div className="flex gap-3">
+            <Link href="/candidate/profile">
+              <Button variant="outline" className="border-white/10 bg-white/5 text-white hover:bg-white/10">
+                View Profile
+              </Button>
+            </Link>
+            <Link href="/candidate/jobs">
+              <Button className="bg-gradient-to-r from-cyan-500 to-blue-600 text-white hover:shadow-lg hover:shadow-cyan-500/25 border-none">
+                Find Jobs
+              </Button>
+            </Link>
+          </div>
+        </div>
+
+        {/* Profile Completion Hero Card */}
+        <div className="relative overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-br from-white/5 to-white/0 backdrop-blur-xl p-1">
+          <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/10 via-purple-500/10 to-transparent opacity-50" />
+          <div className="relative bg-[#0B0B0D]/80 rounded-xl p-6 md:p-8">
+            <div className="flex flex-col md:flex-row gap-8 items-start md:items-center justify-between mb-8">
+              <div>
+                <div className="flex items-center gap-3 mb-2">
+                  <div className="p-2 rounded-lg bg-cyan-500/20 text-cyan-400">
+                    <Sparkles className="w-5 h-5" />
+                  </div>
+                  <h2 className="text-xl font-semibold text-white">Profile Status</h2>
+                </div>
+                <p className="text-gray-400 max-w-md">
+                  Complete your profile to unlock more opportunities and increase your visibility to recruiters.
+                </p>
+              </div>
+              <div className="text-right">
+                <div className="text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-purple-400">
+                  {stats?.profile_completion || 0}%
+                </div>
+                <p className="text-sm text-gray-500">Completion Rate</p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               {completionSteps.map((step) => (
                 <Link key={step.key} href={step.href}>
-                  <div className="flex items-center justify-between p-3 rounded-lg bg-white hover:bg-gray-50 transition-colors cursor-pointer">
-                    <div className="flex items-center space-x-3">
-                      {step.completed ? (
-                        <CheckCircle2 className="h-5 w-5 text-green-500" />
-                      ) : (
-                        <Circle className="h-5 w-5 text-gray-300" />
-                      )}
-                      <span className={step.completed ? 'text-gray-600 line-through' : 'text-gray-900 font-medium'}>
-                        {step.label}
-                      </span>
+                  <div className={cn(
+                    "group relative p-4 rounded-xl border transition-all duration-300",
+                    step.completed 
+                      ? "bg-green-500/5 border-green-500/20 hover:bg-green-500/10" 
+                      : "bg-white/5 border-white/10 hover:border-cyan-500/30 hover:bg-white/10"
+                  )}>
+                    <div className="flex items-center justify-between mb-2">
+                      <div className={cn(
+                        "p-2 rounded-full",
+                        step.completed ? "bg-green-500/20 text-green-400" : "bg-white/10 text-gray-400 group-hover:text-cyan-400"
+                      )}>
+                        {step.completed ? <CheckCircle2 className="w-4 h-4" /> : <Circle className="w-4 h-4" />}
+                      </div>
+                      {!step.completed && <ArrowRight className="w-4 h-4 text-gray-500 group-hover:text-cyan-400 transition-transform group-hover:translate-x-1" />}
                     </div>
-                    {!step.completed && (
-                      <ArrowRight className="h-4 w-4 text-gray-400" />
-                    )}
+                    <p className={cn(
+                      "font-medium",
+                      step.completed ? "text-green-400" : "text-gray-300 group-hover:text-white"
+                    )}>
+                      {step.label}
+                    </p>
                   </div>
                 </Link>
               ))}
             </div>
-            <div className="mt-4 pt-4 border-t border-gray-200">
-              <p className="text-sm text-gray-600">
-                {completedSteps} of {totalSteps} steps completed
-              </p>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Stats Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          <Card className="hover:shadow-lg transition-shadow">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium text-gray-600">Job Applications</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="flex items-center justify-between">
-                <div className="text-3xl font-bold text-gray-900">
-                  {stats?.applications_count || 0}
-                </div>
-                <Briefcase className="h-8 w-8 text-blue-500" />
-              </div>
-              <Link href="/applications">
-                <Button variant="ghost" size="sm" className="mt-2 w-full">
-                  View Applications
-                  <ArrowRight className="h-4 w-4 ml-2" />
-                </Button>
-              </Link>
-            </CardContent>
-          </Card>
-
-          <Card className="hover:shadow-lg transition-shadow">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium text-gray-600">Job Matches</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="flex items-center justify-between">
-                <div className="text-3xl font-bold text-gray-900">
-                  {stats?.job_matches_count || 0}
-                </div>
-                <TrendingUp className="h-8 w-8 text-green-500" />
-              </div>
-              <Link href="/jobs/job-matching">
-                <Button variant="ghost" size="sm" className="mt-2 w-full">
-                  View Matches
-                  <ArrowRight className="h-4 w-4 ml-2" />
-                </Button>
-              </Link>
-            </CardContent>
-          </Card>
-
-          <Card className="hover:shadow-lg transition-shadow">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium text-gray-600">Resume</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="flex items-center justify-between">
-                <div className="text-3xl font-bold text-gray-900">
-                  {stats?.has_resume ? '✓' : '—'}
-                </div>
-                <FileText className="h-8 w-8 text-purple-500" />
-              </div>
-              <Link href={stats?.has_resume ? "/resume-builder" : "/resume-builder/build"}>
-                <Button variant="ghost" size="sm" className="mt-2 w-full">
-                  {stats?.has_resume ? 'Edit Resume' : 'Build Resume'}
-                  <ArrowRight className="h-4 w-4 ml-2" />
-                </Button>
-              </Link>
-            </CardContent>
-          </Card>
-
-          <Card className="hover:shadow-lg transition-shadow">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium text-gray-600">Assessments</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="flex items-center justify-between">
-                <div className="text-3xl font-bold text-gray-900">
-                  {[stats?.has_disc, stats?.has_typing].filter(Boolean).length}/2
-                </div>
-                <Trophy className="h-8 w-8 text-yellow-500" />
-              </div>
-              <Link href="/career-tools/assessments">
-                <Button variant="ghost" size="sm" className="mt-2 w-full">
-                  Take Assessments
-                  <Play className="h-4 w-4 ml-2" />
-                </Button>
-              </Link>
-            </CardContent>
-          </Card>
+          </div>
         </div>
 
-        {/* Quick Actions */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Quick Actions</CardTitle>
-            <CardDescription>Get started with these key features</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <Link href="/career-tools/assessments/disc">
-                <Button className="w-full h-auto py-6 flex flex-col items-center space-y-2" variant="outline">
-                  <Trophy className="h-8 w-8 text-blue-500" />
-                  <span>DISC Assessment</span>
-                  <span className="text-xs text-gray-500">Discover your personality</span>
-                </Button>
-              </Link>
-              
-              <Link href="/resume-builder/build">
-                <Button className="w-full h-auto py-6 flex flex-col items-center space-y-2" variant="outline">
-                  <FileText className="h-8 w-8 text-purple-500" />
-                  <span>Resume Builder</span>
-                  <span className="text-xs text-gray-500">Create your resume</span>
-                </Button>
-              </Link>
-              
-              <Link href="/jobs">
-                <Button className="w-full h-auto py-6 flex flex-col items-center space-y-2" variant="outline">
-                  <Briefcase className="h-8 w-8 text-green-500" />
-                  <span>Browse Jobs</span>
-                  <span className="text-xs text-gray-500">Find opportunities</span>
-                </Button>
-              </Link>
+        {/* Bento Grid Stats */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          {/* Applications */}
+          <Link href="/candidate/applications" className="group">
+            <div className="h-full relative overflow-hidden rounded-xl border border-white/10 bg-white/5 backdrop-blur-sm p-6 transition-all duration-300 hover:border-cyan-500/30 hover:shadow-[0_0_30px_-10px_rgba(6,182,212,0.3)]">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-gray-400 font-medium group-hover:text-cyan-400 transition-colors">Applications</h3>
+                <Briefcase className="w-5 h-5 text-gray-500 group-hover:text-cyan-400 transition-colors" />
+              </div>
+              <div className="flex items-end gap-2">
+                <span className="text-3xl font-bold text-white">{stats?.applications_count || 0}</span>
+                <span className="text-sm text-gray-500 mb-1">Active</span>
+              </div>
             </div>
-          </CardContent>
-        </Card>
+          </Link>
+
+          {/* Job Matches */}
+          <Link href="/candidate/jobs" className="group">
+            <div className="h-full relative overflow-hidden rounded-xl border border-white/10 bg-white/5 backdrop-blur-sm p-6 transition-all duration-300 hover:border-green-500/30 hover:shadow-[0_0_30px_-10px_rgba(16,185,129,0.3)]">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-gray-400 font-medium group-hover:text-green-400 transition-colors">Job Matches</h3>
+                <TrendingUp className="w-5 h-5 text-gray-500 group-hover:text-green-400 transition-colors" />
+              </div>
+              <div className="flex items-end gap-2">
+                <span className="text-3xl font-bold text-white">{stats?.job_matches_count || 0}</span>
+                <span className="text-sm text-gray-500 mb-1">New</span>
+              </div>
+            </div>
+          </Link>
+
+          {/* Resume Status */}
+          <Link href="/candidate/resume" className="group">
+            <div className="h-full relative overflow-hidden rounded-xl border border-white/10 bg-white/5 backdrop-blur-sm p-6 transition-all duration-300 hover:border-purple-500/30 hover:shadow-[0_0_30px_-10px_rgba(168,85,247,0.3)]">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-gray-400 font-medium group-hover:text-purple-400 transition-colors">Resume</h3>
+                <FileText className="w-5 h-5 text-gray-500 group-hover:text-purple-400 transition-colors" />
+              </div>
+              <div className="flex items-center gap-2">
+                <Badge variant="outline" className={cn(
+                  "border-0",
+                  stats?.has_resume ? "bg-green-500/20 text-green-400" : "bg-yellow-500/20 text-yellow-400"
+                )}>
+                  {stats?.has_resume ? 'Optimized' : 'Pending'}
+                </Badge>
+              </div>
+            </div>
+          </Link>
+
+          {/* Assessments */}
+          <Link href="/candidate/games" className="group">
+            <div className="h-full relative overflow-hidden rounded-xl border border-white/10 bg-white/5 backdrop-blur-sm p-6 transition-all duration-300 hover:border-yellow-500/30 hover:shadow-[0_0_30px_-10px_rgba(234,179,8,0.3)]">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-gray-400 font-medium group-hover:text-yellow-400 transition-colors">Assessments</h3>
+                <Trophy className="w-5 h-5 text-gray-500 group-hover:text-yellow-400 transition-colors" />
+              </div>
+              <div className="flex items-end gap-2">
+                <span className="text-3xl font-bold text-white">
+                  {[stats?.has_disc, stats?.has_typing].filter(Boolean).length}
+                </span>
+                <span className="text-sm text-gray-500 mb-1">/ 2 Completed</span>
+              </div>
+            </div>
+          </Link>
+        </div>
+
+        {/* Quick Actions Bento */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <Link href="/candidate/games" className="group relative overflow-hidden rounded-xl border border-white/10 bg-white/5 p-6 transition-all hover:bg-white/10">
+            <div className="absolute inset-0 bg-gradient-to-br from-blue-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+            <div className="relative z-10">
+              <div className="p-3 rounded-lg bg-blue-500/20 w-fit mb-4">
+                <Trophy className="w-6 h-6 text-blue-400" />
+              </div>
+              <h3 className="text-lg font-semibold text-white mb-1">DISC Assessment</h3>
+              <p className="text-sm text-gray-400">Discover your personality type and strengths.</p>
+            </div>
+          </Link>
+
+          <Link href="/candidate/resume" className="group relative overflow-hidden rounded-xl border border-white/10 bg-white/5 p-6 transition-all hover:bg-white/10">
+            <div className="absolute inset-0 bg-gradient-to-br from-purple-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+            <div className="relative z-10">
+              <div className="p-3 rounded-lg bg-purple-500/20 w-fit mb-4">
+                <FileText className="w-6 h-6 text-purple-400" />
+              </div>
+              <h3 className="text-lg font-semibold text-white mb-1">AI Resume Builder</h3>
+              <p className="text-sm text-gray-400">Create a professional resume in minutes.</p>
+            </div>
+          </Link>
+
+          <Link href="/candidate/jobs" className="group relative overflow-hidden rounded-xl border border-white/10 bg-white/5 p-6 transition-all hover:bg-white/10">
+            <div className="absolute inset-0 bg-gradient-to-br from-green-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+            <div className="relative z-10">
+              <div className="p-3 rounded-lg bg-green-500/20 w-fit mb-4">
+                <Briefcase className="w-6 h-6 text-green-400" />
+              </div>
+              <h3 className="text-lg font-semibold text-white mb-1">Browse Jobs</h3>
+              <p className="text-sm text-gray-400">Find the perfect role for your skills.</p>
+            </div>
+          </Link>
         </div>
       </div>
     </>
   )
 }
-
