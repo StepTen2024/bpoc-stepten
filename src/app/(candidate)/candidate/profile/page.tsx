@@ -573,15 +573,102 @@ export default function CandidateProfilePage() {
                 <Label htmlFor="birthday" className={cn(labelClass, "mb-1.5 block")}>
                   Birthday <span className="text-red-400">*</span>
                 </Label>
-                <Input
-                  id="birthday"
-                  type="date"
-                  value={formData.birthday}
-                  onChange={(e) => handleInputChange('birthday', e.target.value)}
-                  max={new Date().toISOString().split('T')[0]}
-                  min="1900-01-01"
-                  className={inputClass}
-                />
+                <div className="grid grid-cols-3 gap-2">
+                  {/* Year */}
+                  <Select 
+                    value={formData.birthday ? new Date(formData.birthday).getFullYear().toString() : ''} 
+                    onValueChange={(year) => {
+                      const currentDate = formData.birthday ? new Date(formData.birthday) : new Date()
+                      const month = currentDate.getMonth() + 1 || 1
+                      const currentDay = currentDate.getDate() || 1
+                      // Ensure day is valid for the selected month/year (handles leap years)
+                      const maxDay = new Date(parseInt(year), month, 0).getDate()
+                      const validDay = Math.min(currentDay, maxDay)
+                      const newDate = `${year}-${String(month).padStart(2, '0')}-${String(validDay).padStart(2, '0')}`
+                      handleInputChange('birthday', newDate)
+                    }}
+                  >
+                    <SelectTrigger className={inputClass}>
+                      <SelectValue placeholder="Year" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-[#1a1a1d] border-white/10 text-white max-h-[200px]">
+                      {Array.from({ length: new Date().getFullYear() - 1900 + 1 }, (_, i) => {
+                        const year = new Date().getFullYear() - i
+                        return (
+                          <SelectItem key={year} value={year.toString()}>
+                            {year}
+                          </SelectItem>
+                        )
+                      })}
+                    </SelectContent>
+                  </Select>
+                  
+                  {/* Month */}
+                  <Select 
+                    value={formData.birthday ? (new Date(formData.birthday).getMonth() + 1).toString() : ''} 
+                    onValueChange={(month) => {
+                      const currentDate = formData.birthday ? new Date(formData.birthday) : new Date()
+                      const year = currentDate.getFullYear() || new Date().getFullYear()
+                      const currentDay = currentDate.getDate() || 1
+                      // Ensure day is valid for the new month (e.g., if switching from Jan 31 to Feb, use Feb 28/29)
+                      const maxDay = new Date(year, parseInt(month), 0).getDate()
+                      const validDay = Math.min(currentDay, maxDay)
+                      const newDate = `${year}-${String(month).padStart(2, '0')}-${String(validDay).padStart(2, '0')}`
+                      handleInputChange('birthday', newDate)
+                    }}
+                  >
+                    <SelectTrigger className={inputClass}>
+                      <SelectValue placeholder="Month" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-[#1a1a1d] border-white/10 text-white">
+                      {Array.from({ length: 12 }, (_, i) => {
+                        const month = i + 1
+                        const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
+                        return (
+                          <SelectItem key={month} value={month.toString()}>
+                            {monthNames[i]}
+                          </SelectItem>
+                        )
+                      })}
+                    </SelectContent>
+                  </Select>
+                  
+                  {/* Day */}
+                  <Select 
+                    value={formData.birthday ? new Date(formData.birthday).getDate().toString() : ''} 
+                    onValueChange={(day) => {
+                      const currentDate = formData.birthday ? new Date(formData.birthday) : new Date()
+                      const year = currentDate.getFullYear() || new Date().getFullYear()
+                      const month = currentDate.getMonth() + 1 || 1
+                      // Ensure day is valid for the selected month/year (handles leap years)
+                      const maxDay = new Date(year, month, 0).getDate()
+                      const validDay = Math.min(parseInt(day), maxDay)
+                      const newDate = `${year}-${String(month).padStart(2, '0')}-${String(validDay).padStart(2, '0')}`
+                      handleInputChange('birthday', newDate)
+                    }}
+                  >
+                    <SelectTrigger className={inputClass}>
+                      <SelectValue placeholder="Day" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-[#1a1a1d] border-white/10 text-white max-h-[200px]">
+                      {(() => {
+                        const currentDate = formData.birthday ? new Date(formData.birthday) : new Date()
+                        const year = currentDate.getFullYear() || new Date().getFullYear()
+                        const month = currentDate.getMonth() + 1 || 1
+                        // Get days in month (handles leap years)
+                        const daysInMonth = new Date(year, month, 0).getDate()
+                        return Array.from({ length: daysInMonth }, (_, i) => {
+                          const day = i + 1
+                          return (
+                            <SelectItem key={day} value={day.toString()}>
+                              {day}
+                            </SelectItem>
+                          )
+                        })
+                      })()}
+                    </SelectContent>
+                  </Select>
+                </div>
                 {age !== null && (
                   <p className="text-xs text-cyan-400 mt-1">Age: {age} years old</p>
                 )}
