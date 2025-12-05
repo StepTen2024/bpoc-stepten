@@ -3,7 +3,8 @@ import { createClient } from '@supabase/supabase-js'
 
 export async function middleware(request: NextRequest) {
   // Only apply middleware to API routes that need authentication
-  if (request.nextUrl.pathname.startsWith('/api/save-resume') || 
+  if (request.nextUrl.pathname.startsWith('/api/candidates/resume') ||
+      request.nextUrl.pathname.startsWith('/api/save-resume') || 
       request.nextUrl.pathname.startsWith('/api/save-generated-resume') ||
       request.nextUrl.pathname.startsWith('/api/save-resume-to-profile') ||
       request.nextUrl.pathname.startsWith('/api/user/saved-resumes') ||
