@@ -72,13 +72,21 @@ export async function GET() {
               'API key is invalid or expired',
               'Places API (New) is not enabled in Google Cloud Console',
               'API key restrictions are blocking the request',
-              'Billing is not enabled on the Google Cloud project',
+              'Billing is not enabled on the Google Cloud project (MOST COMMON)',
             ],
             '400 Bad Request': [
               'Invalid request format',
               'Missing required fields',
             ],
           },
+          fixInstructions: responseData.error?.message?.includes('billing') ? {
+            step1: 'Go to Google Cloud Console',
+            step2: 'Enable billing for your project',
+            step3: 'Wait a few minutes for billing to propagate',
+            step4: 'Test again - autocomplete will work automatically',
+            billingLink: 'https://console.developers.google.com/billing/enable?project=208201265983',
+            note: 'Google provides $200/month free credits - usually enough for moderate usage',
+          } : null,
           apiKeyInfo: {
             hasKey: true,
             keyLength,

@@ -86,10 +86,19 @@ export function PlacesAutocomplete({ value, placeholder, disabled, onChange, onS
         })
         
         if (!res.ok) {
-          // Silently fail if API key is invalid or API is not enabled
-          // This prevents console errors when API is not configured
+          // Handle specific error cases
           if (res.status === 403 || res.status === 401) {
-            console.warn('Google Places API not available - check API key configuration')
+            try {
+              const errorData = await res.json()
+              // Check if it's a billing error
+              if (errorData.error?.message?.includes('billing')) {
+                console.warn('Google Places API requires billing to be enabled. Autocomplete disabled.')
+              } else {
+                console.warn('Google Places API not available - check API key configuration')
+              }
+            } catch {
+              console.warn('Google Places API not available - check API key configuration')
+            }
           }
           setPredictions([])
           setOpen(false)
