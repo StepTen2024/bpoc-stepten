@@ -114,22 +114,8 @@ export default function CandidateProfilePage() {
     }
   }, [formData.birthday])
 
-  // Handle work status changes - disable/enable fields
-  useEffect(() => {
-    if (!formData.work_status) return
-
-    if (formData.work_status === 'unemployed' || formData.work_status === 'student') {
-      // Clear disabled fields
-      if (formData.current_employer || formData.current_salary || formData.notice_period_days) {
-        setFormData(prev => ({
-          ...prev,
-          current_employer: '',
-          current_salary: '',
-          notice_period_days: ''
-        }))
-      }
-    }
-  }, [formData.work_status])
+  // Note: Removed auto-clearing of fields based on work status
+  // Users can now fill in these fields regardless of work status
 
   async function fetchProfile() {
     try {
@@ -332,26 +318,18 @@ export default function CandidateProfilePage() {
     }
   }
 
+  // All fields are now always enabled - users can fill them regardless of work status
   const isFieldDisabled = (field: string) => {
-    switch (formData.work_status) {
-      case 'unemployed':
-      case 'student':
-        return ['current_employer', 'current_salary', 'notice_period_days'].includes(field)
-      default:
-        return false
-    }
+    return false // Always allow editing
   }
 
   const getFieldPlaceholder = (field: string) => {
     switch (field) {
       case 'current_employer':
-        if (isFieldDisabled('current_employer')) return 'Not applicable'
         return 'e.g., ABC Company or "Prefer not to disclose"'
       case 'current_salary':
-        if (isFieldDisabled('current_salary')) return 'Not applicable'
         return 'e.g., 60000 (enter full numbers)'
       case 'notice_period_days':
-        if (isFieldDisabled('notice_period_days')) return 'Not applicable'
         return 'e.g., 30 days'
       default:
         return ''
