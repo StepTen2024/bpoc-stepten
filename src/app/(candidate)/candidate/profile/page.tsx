@@ -318,11 +318,6 @@ export default function CandidateProfilePage() {
     }
   }
 
-  // All fields are now always enabled - users can fill them regardless of work status
-  const isFieldDisabled = (field: string) => {
-    return false // Always allow editing
-  }
-
   const getFieldPlaceholder = (field: string) => {
     switch (field) {
       case 'current_employer':
