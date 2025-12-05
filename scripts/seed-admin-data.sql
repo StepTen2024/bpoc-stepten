@@ -56,15 +56,15 @@ BEGIN
 
 -- ============================================
 -- 2. BPOC USERS (Admin Staff)
+-- (full_name is auto-generated from first_name + last_name)
 -- ============================================
-INSERT INTO bpoc_users (id, email, first_name, last_name, full_name, phone, avatar_url, role, is_active, created_at, updated_at)
+INSERT INTO bpoc_users (id, email, first_name, last_name, phone, avatar_url, role, is_active, created_at, updated_at)
 VALUES 
-    (admin_user_id, 'admin@bpoc.com', 'BPOC', 'Admin', 'BPOC Admin', '+1 555 0100', NULL, 'admin', true, NOW(), NOW())
+    (admin_user_id, 'admin@bpoc.com', 'BPOC', 'Admin', '+1 555 0100', NULL, 'admin', true, NOW(), NOW())
 ON CONFLICT (id) DO UPDATE SET
     email = EXCLUDED.email,
     first_name = EXCLUDED.first_name,
     last_name = EXCLUDED.last_name,
-    full_name = EXCLUDED.full_name,
     updated_at = NOW();
 
 -- ============================================
@@ -119,17 +119,17 @@ ON CONFLICT (slug) DO UPDATE SET
 
 -- ============================================
 -- 7. AGENCY RECRUITERS
+-- (full_name is auto-generated from first_name + last_name)
 -- ============================================
-INSERT INTO agency_recruiters (id, user_id, agency_id, email, first_name, last_name, full_name, phone, avatar_url, role, is_active, can_post_jobs, can_manage_applications, can_invite_recruiters, can_manage_clients, invited_by, invited_at, joined_at, created_at, updated_at)
+INSERT INTO agency_recruiters (id, user_id, agency_id, email, first_name, last_name, phone, avatar_url, role, is_active, can_post_jobs, can_manage_applications, can_invite_recruiters, can_manage_clients, invited_by, invited_at, joined_at, created_at, updated_at)
 VALUES 
-    (recruiter_id, recruiter_user_id, agency_id, 'recruiter@shoreagents.com', 'Test', 'Recruiter', 'Test Recruiter', '+1 555 0210', NULL, 'recruiter', true, true, true, false, false, NULL, NULL, NOW(), NOW(), NOW()),
-    (gen_random_uuid(), gen_random_uuid(), agency_id, 'senior.recruiter@shoreagents.com', 'Sarah', 'Johnson', 'Sarah Johnson', '+1 555 0211', NULL, 'admin', true, true, true, true, true, NULL, NULL, NOW(), NOW(), NOW()),
-    (gen_random_uuid(), gen_random_uuid(), agency_id, 'mike.smith@shoreagents.com', 'Mike', 'Smith', 'Mike Smith', '+1 555 0212', NULL, 'recruiter', true, true, true, false, false, NULL, NULL, NOW(), NOW(), NOW())
+    (recruiter_id, recruiter_user_id, agency_id, 'recruiter@shoreagents.com', 'Test', 'Recruiter', '+1 555 0210', NULL, 'recruiter', true, true, true, false, false, NULL, NULL, NOW(), NOW(), NOW()),
+    (gen_random_uuid(), gen_random_uuid(), agency_id, 'senior.recruiter@shoreagents.com', 'Sarah', 'Johnson', '+1 555 0211', NULL, 'admin', true, true, true, true, true, NULL, NULL, NOW(), NOW(), NOW()),
+    (gen_random_uuid(), gen_random_uuid(), agency_id, 'mike.smith@shoreagents.com', 'Mike', 'Smith', '+1 555 0212', NULL, 'recruiter', true, true, true, false, false, NULL, NULL, NOW(), NOW(), NOW())
 ON CONFLICT (id) DO UPDATE SET
     email = EXCLUDED.email,
     first_name = EXCLUDED.first_name,
     last_name = EXCLUDED.last_name,
-    full_name = EXCLUDED.full_name,
     updated_at = NOW();
 
 -- ============================================
