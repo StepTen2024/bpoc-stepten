@@ -803,9 +803,8 @@ export default function CandidateProfilePage() {
                   id="current_employer"
                   value={formData.current_employer}
                   onChange={(e) => handleInputChange('current_employer', e.target.value)}
-                  disabled={isFieldDisabled('current_employer')}
                   placeholder={getFieldPlaceholder('current_employer')}
-                  className={cn(inputClass, "disabled:opacity-50 disabled:cursor-not-allowed")}
+                  className={inputClass}
                 />
               </div>
 
@@ -843,9 +842,8 @@ export default function CandidateProfilePage() {
                   type="text"
                   value={formData.current_salary}
                   onChange={(e) => handleInputChange('current_salary', e.target.value)}
-                  disabled={isFieldDisabled('current_salary')}
                   placeholder={getFieldPlaceholder('current_salary')}
-                  className={cn(inputClass, "disabled:opacity-50 disabled:cursor-not-allowed")}
+                  className={inputClass}
                 />
               </div>
 
@@ -903,9 +901,8 @@ export default function CandidateProfilePage() {
                   type="number"
                   value={formData.notice_period_days}
                   onChange={(e) => handleInputChange('notice_period_days', e.target.value)}
-                  disabled={isFieldDisabled('notice_period_days')}
                   placeholder={getFieldPlaceholder('notice_period_days')}
-                  className={cn(inputClass, "disabled:opacity-50 disabled:cursor-not-allowed")}
+                  className={inputClass}
                 />
               </div>
 
