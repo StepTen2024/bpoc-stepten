@@ -23,36 +23,27 @@ export default function AdminLoginPage() {
     setError('');
 
     try {
-      // Sign in with Supabase Auth
-      const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
-        email,
-        password,
+      // Call API route to login (bypasses RLS for bpoc_users check)
+      const response = await fetch('/api/admin/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email, password }),
       });
 
-      if (authError) {
-        throw new Error(authError.message);
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || 'Login failed');
       }
 
-      if (!authData.user) {
-        throw new Error('Login failed');
-      }
-
-      // Check if user is a BPOC admin
-      const { data: bpocUser, error: bpocError } = await supabase
-        .from('bpoc_users')
-        .select('*')
-        .eq('id', authData.user.id)
-        .single();
-
-      if (bpocError || !bpocUser) {
-        // Sign out if not a BPOC user
-        await supabase.auth.signOut();
-        throw new Error('Access denied. Admin account required.');
-      }
-
-      if (!bpocUser.is_active) {
-        await supabase.auth.signOut();
-        throw new Error('Your account has been deactivated.');
+      // Set the session in Supabase client
+      if (result.session) {
+        await supabase.auth.setSession({
+          access_token: result.session.access_token,
+          refresh_token: result.session.refresh_token,
+        });
       }
 
       // Success - redirect to admin dashboard
