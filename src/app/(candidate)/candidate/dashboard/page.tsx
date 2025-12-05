@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { useAuth } from '@/contexts/AuthContext'
+import { supabase } from '@/lib/supabase'
 import ProfileCompletionModal from '@/components/candidate/ProfileCompletionModal'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/shared/ui/card'
 import { Button } from '@/components/shared/ui/button'
@@ -48,32 +49,58 @@ export default function CandidateDashboardPage() {
   const [stats, setStats] = useState<DashboardStats | null>(null)
   const [loadingStats, setLoadingStats] = useState(true)
   const [showProfileModal, setShowProfileModal] = useState(false)
+  const [checkingAuth, setCheckingAuth] = useState(true)
 
   useEffect(() => {
-    // Wait a bit longer for auth state to settle after signup
-    if (!loading && !user) {
-      // Check if user just signed up - give them a moment for auth to sync
-      const justSignedUp = typeof window !== 'undefined' ? sessionStorage.getItem('hasSignedIn') : null
-      if (justSignedUp) {
-        // Wait a bit more for auth context to update
-        const timeout = setTimeout(() => {
-          if (!user) {
-            router.push('/')
-          }
-        }, 2000)
-        return () => clearTimeout(timeout)
-      } else {
-        router.push('/')
+    const checkAuth = async () => {
+      // First, wait for AuthContext to finish loading
+      if (loading) {
+        console.log('⏳ AuthContext still loading...')
         return
+      }
+
+      // If AuthContext has a user, use it
+      if (user) {
+        console.log('✅ User found in AuthContext:', user.email)
+        setCheckingAuth(false)
+        fetchProfile()
+        fetchStats()
+        return
+      }
+
+      // If no user in AuthContext, check session directly from Supabase
+      console.log('🔍 No user in AuthContext, checking Supabase session directly...')
+      try {
+        const { data: { session }, error } = await supabase.auth.getSession()
+        
+        if (error) {
+          console.error('❌ Error checking session:', error)
+          router.push('/')
+          return
+        }
+
+        if (session?.user) {
+          console.log('✅ Session found directly from Supabase:', session.user.email)
+          // Session exists, wait a moment for AuthContext to catch up
+          // Don't redirect - let AuthContext update naturally
+          setTimeout(() => {
+            setCheckingAuth(false)
+            fetchProfile()
+            fetchStats()
+          }, 500)
+          return
+        }
+
+        // No session found - redirect to home
+        console.log('❌ No session found, redirecting to home')
+        router.push('/')
+      } catch (error) {
+        console.error('❌ Error in auth check:', error)
+        router.push('/')
       }
     }
 
-    if (user) {
-      fetchProfile()
-      fetchStats()
-      
-      // Profile completion modal removed - users can access it from profile page when ready
-    }
+    checkAuth()
   }, [user, loading, router])
 
   async function fetchProfile() {
@@ -130,7 +157,7 @@ export default function CandidateDashboardPage() {
     }
   }
 
-  if (loading || loadingStats) {
+  if (loading || loadingStats || checkingAuth) {
     return (
       <div className="p-8">
         <div className="text-center">
