@@ -509,17 +509,17 @@ export default function CandidateProfilePage() {
 
       const profileResult = await profileResponse.json()
       console.log('✅ Profile saved successfully:', profileResult)
-
-      toast({
-        title: 'Profile updated',
-        description: 'Your profile has been saved successfully.',
-      })
       
       // Reload profile data to ensure UI is in sync
       await fetchProfile()
       
       // Exit edit mode after successful save
       setIsEditing(false)
+      
+      toast({
+        title: 'Profile updated',
+        description: 'Your profile has been saved successfully.',
+      })
       
       toast({
         title: 'Profile updated',
