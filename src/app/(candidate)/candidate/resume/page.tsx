@@ -187,11 +187,20 @@ export default function ResumeBuilderPage() {
   const [progressValue, setProgressValue] = useState(0);
   const [showSaveSuccessModal, setShowSaveSuccessModal] = useState(false);
   
+  // Multi-step flow states
+  // Step 1: Upload, Step 2: AI Analysis, Step 3: Build Resume
+  const [currentStep, setCurrentStep] = useState<1 | 2 | 3>(1);
+  const [analysisResults, setAnalysisResults] = useState<any>(null);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [analysisProgress, setAnalysisProgress] = useState(0);
+  
   // Upload UI states for when no resume exists
   const [showUploadUI, setShowUploadUI] = useState(false);
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
+  const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
   const [isProcessingUpload, setIsProcessingUpload] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
+  const [extractedResumeData, setExtractedResumeData] = useState<any>(null);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
   const [savedResumeUrl, setSavedResumeUrl] = useState<string>('');
   const [hasSavedResume, setHasSavedResume] = useState(false);
@@ -2188,7 +2197,7 @@ export default function ResumeBuilderPage() {
     );
   }
 
-  // Handle file upload
+  // Handle file upload - Step 1
   const handleFileUpload = async (file: File) => {
     if (!file) return;
     
@@ -2206,14 +2215,15 @@ export default function ResumeBuilderPage() {
     }
     
     setUploadedFile(file);
+    setUploadedFiles([file]);
     setIsProcessingUpload(true);
     setUploadProgress(0);
     
     try {
       // Simulate progress for UX
       const progressInterval = setInterval(() => {
-        setUploadProgress(prev => Math.min(prev + 10, 90));
-      }, 500);
+        setUploadProgress(prev => Math.min(prev + 5, 90));
+      }, 300);
       
       // Get session token
       const sessionToken = await getSessionToken();
@@ -2256,15 +2266,18 @@ export default function ResumeBuilderPage() {
         
         const result = await response.json();
         
-        // Set the resume data and clear error
+        // Set the extracted resume data and move to Step 2
         if (result.resumeData) {
-          setOriginalResumeData(result.resumeData);
-          setImprovedResume(result.improvedResume || result.resumeData);
+          setExtractedResumeData(result.resumeData);
           setError(null);
-          toast.success('Resume uploaded and processed successfully!');
+          toast.success('Resume extracted successfully! Ready for AI analysis.');
+          
+          // Move to Step 2 (AI Analysis)
+          setTimeout(() => {
+            setIsProcessingUpload(false);
+            setCurrentStep(2);
+          }, 500);
         }
-        
-        setIsProcessingUpload(false);
       };
       
       reader.onerror = () => {
@@ -2282,6 +2295,91 @@ export default function ResumeBuilderPage() {
     }
   };
 
+  // Handle AI Analysis - Step 2
+  const handleAIAnalysis = async () => {
+    if (!extractedResumeData) {
+      toast.error('No resume data to analyze');
+      return;
+    }
+    
+    setIsAnalyzing(true);
+    setAnalysisProgress(0);
+    
+    try {
+      const sessionToken = await getSessionToken();
+      if (!sessionToken) {
+        toast.error('Please log in to continue');
+        setIsAnalyzing(false);
+        return;
+      }
+      
+      // Simulate progress
+      const progressInterval = setInterval(() => {
+        setAnalysisProgress(prev => Math.min(prev + 5, 85));
+      }, 400);
+      
+      // Call AI analysis API
+      const response = await fetch('/api/candidates/ai-analysis/analyze', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${sessionToken}`,
+          'x-user-id': String(user?.id)
+        },
+        body: JSON.stringify({
+          resumeData: extractedResumeData,
+          candidateId: user?.id
+        })
+      });
+      
+      clearInterval(progressInterval);
+      setAnalysisProgress(100);
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || 'AI analysis failed');
+      }
+      
+      const result = await response.json();
+      
+      // Store analysis results and generate improved resume
+      setAnalysisResults(result.analysis);
+      
+      // Generate improved resume from analysis
+      if (result.improvedResume) {
+        setImprovedResume(result.improvedResume);
+      } else if (extractedResumeData) {
+        // Use extracted data as base
+        setImprovedResume(extractedResumeData);
+      }
+      
+      setOriginalResumeData(extractedResumeData);
+      toast.success('AI analysis complete! Ready to build your resume.');
+      
+      // Move to Step 3 (Build)
+      setTimeout(() => {
+        setIsAnalyzing(false);
+        setCurrentStep(3);
+        setError(null); // Clear any error to show build UI
+      }, 500);
+      
+    } catch (err) {
+      console.error('AI Analysis error:', err);
+      toast.error(err instanceof Error ? err.message : 'AI analysis failed');
+      setIsAnalyzing(false);
+    }
+  };
+
+  // Skip AI Analysis and go directly to build
+  const handleSkipAnalysis = () => {
+    if (extractedResumeData) {
+      setImprovedResume(extractedResumeData);
+      setOriginalResumeData(extractedResumeData);
+    }
+    setCurrentStep(3);
+    setError(null);
+  };
+
   // Handle drop for upload UI (handleDragOver already exists in file)
   const handleUploadDrop = (e: React.DragEvent) => {
     e.preventDefault();
@@ -2293,7 +2391,41 @@ export default function ResumeBuilderPage() {
     }
   };
 
-  if (error) {
+  // Step indicator component
+  const StepIndicator = () => (
+    <div className="flex items-center justify-center gap-4 mb-8">
+      {[
+        { num: 1, label: 'Upload Resume', icon: Upload },
+        { num: 2, label: 'AI Analysis', icon: Sparkles },
+        { num: 3, label: 'Build Resume', icon: FileText }
+      ].map((step, idx) => (
+        <React.Fragment key={step.num}>
+          <div className={`flex items-center gap-2 ${currentStep >= step.num ? 'text-cyan-400' : 'text-gray-500'}`}>
+            <div className={`w-10 h-10 rounded-full flex items-center justify-center border-2 transition-all ${
+              currentStep > step.num 
+                ? 'bg-cyan-500 border-cyan-500 text-white' 
+                : currentStep === step.num 
+                  ? 'border-cyan-400 text-cyan-400' 
+                  : 'border-gray-600 text-gray-500'
+            }`}>
+              {currentStep > step.num ? (
+                <CheckCircle className="h-5 w-5" />
+              ) : (
+                <step.icon className="h-5 w-5" />
+              )}
+            </div>
+            <span className="hidden sm:inline font-medium">{step.label}</span>
+          </div>
+          {idx < 2 && (
+            <div className={`w-12 h-0.5 ${currentStep > step.num ? 'bg-cyan-500' : 'bg-gray-600'}`} />
+          )}
+        </React.Fragment>
+      ))}
+    </div>
+  );
+
+  // Show Step 1 (Upload) or Step 2 (Analysis) if not yet at Step 3
+  if (error || currentStep < 3) {
     return (
       <div className="space-y-8">
         {/* Header */}
@@ -2304,74 +2436,155 @@ export default function ResumeBuilderPage() {
           </p>
         </div>
 
-        {/* Upload Interface - Self-contained within dashboard */}
-        <div className="relative group overflow-hidden rounded-xl border border-white/10 bg-white/5 backdrop-blur-xl p-8">
-          <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/10 via-transparent to-purple-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-          
-          <div className="relative z-10">
-            {isProcessingUpload ? (
-              <div className="text-center py-12">
-                <Loader2 className="h-16 w-16 text-cyan-400 mx-auto mb-4 animate-spin" />
-                <h2 className="text-2xl font-bold text-white mb-2">Processing Your Resume</h2>
-                <p className="text-gray-300 mb-4">Extracting and analyzing your resume data...</p>
-                <div className="w-full max-w-md mx-auto bg-gray-700 rounded-full h-2">
-                  <div 
-                    className="bg-gradient-to-r from-cyan-500 to-purple-500 h-2 rounded-full transition-all duration-300"
-                    style={{ width: `${uploadProgress}%` }}
-                  />
-                </div>
-                <p className="text-gray-400 mt-2 text-sm">{uploadProgress}% complete</p>
-              </div>
-            ) : (
-              <div 
-                className="text-center py-12 border-2 border-dashed border-white/20 rounded-lg hover:border-cyan-400/50 transition-colors cursor-pointer"
-                onDragOver={handleDragOver}
-                onDrop={handleUploadDrop}
-                onClick={() => fileInputRef.current?.click()}
-              >
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept=".pdf,.doc,.docx"
-                  className="hidden"
-                  onChange={(e) => {
-                    const file = e.target.files?.[0];
-                    if (file) handleFileUpload(file);
-                  }}
-                />
-                
-                <Upload className="h-16 w-16 text-cyan-400 mx-auto mb-4" />
-                <h2 className="text-2xl font-bold text-white mb-2">Upload Your Resume</h2>
-                <p className="text-gray-300 mb-4">
-                  Drag and drop your resume here, or click to browse
-                </p>
-                <p className="text-gray-500 text-sm mb-6">
-                  Supported formats: PDF, DOC, DOCX (Max 10MB)
-                </p>
-                
-                <Button
-                  className="bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700"
-                >
-                  <Upload className="h-4 w-4 mr-2" />
-                  Select File
-                </Button>
-              </div>
-            )}
+        {/* Step Indicator */}
+        <StepIndicator />
+
+        {/* Step 1: Upload Resume */}
+        {currentStep === 1 && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="relative group overflow-hidden rounded-xl border border-white/10 bg-white/5 backdrop-blur-xl p-8"
+          >
+            <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/10 via-transparent to-purple-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
             
-            {/* Back to Dashboard link */}
-            <div className="mt-6 text-center">
-              <Button
-                onClick={() => router.push('/candidate/dashboard')}
-                variant="ghost"
-                className="text-gray-400 hover:text-white"
-              >
-                <ArrowLeft className="h-4 w-4 mr-2" />
-                Back to Dashboard
-              </Button>
+            <div className="relative z-10">
+              {isProcessingUpload ? (
+                <div className="text-center py-12">
+                  <Loader2 className="h-16 w-16 text-cyan-400 mx-auto mb-4 animate-spin" />
+                  <h2 className="text-2xl font-bold text-white mb-2">Extracting Resume Data</h2>
+                  <p className="text-gray-300 mb-4">Using AI to extract text and structure from your resume...</p>
+                  <div className="w-full max-w-md mx-auto bg-gray-700 rounded-full h-2">
+                    <div 
+                      className="bg-gradient-to-r from-cyan-500 to-purple-500 h-2 rounded-full transition-all duration-300"
+                      style={{ width: `${uploadProgress}%` }}
+                    />
+                  </div>
+                  <p className="text-gray-400 mt-2 text-sm">{uploadProgress}% complete</p>
+                </div>
+              ) : (
+                <div 
+                  className="text-center py-12 border-2 border-dashed border-white/20 rounded-lg hover:border-cyan-400/50 transition-colors cursor-pointer"
+                  onDragOver={handleDragOver}
+                  onDrop={handleUploadDrop}
+                  onClick={() => fileInputRef.current?.click()}
+                >
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept=".pdf,.doc,.docx"
+                    className="hidden"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) handleFileUpload(file);
+                    }}
+                  />
+                  
+                  <Upload className="h-16 w-16 text-cyan-400 mx-auto mb-4" />
+                  <h2 className="text-2xl font-bold text-white mb-2">Step 1: Upload Your Resume</h2>
+                  <p className="text-gray-300 mb-4">
+                    Drag and drop your resume here, or click to browse
+                  </p>
+                  <p className="text-gray-500 text-sm mb-6">
+                    Supported formats: PDF, DOC, DOCX (Max 10MB)
+                  </p>
+                  
+                  <Button
+                    className="bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700"
+                  >
+                    <Upload className="h-4 w-4 mr-2" />
+                    Select File
+                  </Button>
+                </div>
+              )}
             </div>
-          </div>
-        </div>
+          </motion.div>
+        )}
+
+        {/* Step 2: AI Analysis */}
+        {currentStep === 2 && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="relative group overflow-hidden rounded-xl border border-white/10 bg-white/5 backdrop-blur-xl p-8"
+          >
+            <div className="absolute inset-0 bg-gradient-to-br from-purple-500/10 via-transparent to-pink-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+            
+            <div className="relative z-10">
+              {isAnalyzing ? (
+                <div className="text-center py-12">
+                  <Sparkles className="h-16 w-16 text-purple-400 mx-auto mb-4 animate-pulse" />
+                  <h2 className="text-2xl font-bold text-white mb-2">AI Analysis in Progress</h2>
+                  <p className="text-gray-300 mb-4">Claude AI is analyzing your resume and generating improvements...</p>
+                  <div className="w-full max-w-md mx-auto bg-gray-700 rounded-full h-2">
+                    <div 
+                      className="bg-gradient-to-r from-purple-500 to-pink-500 h-2 rounded-full transition-all duration-300"
+                      style={{ width: `${analysisProgress}%` }}
+                    />
+                  </div>
+                  <p className="text-gray-400 mt-2 text-sm">{analysisProgress}% complete</p>
+                </div>
+              ) : (
+                <div className="text-center py-12">
+                  <Sparkles className="h-16 w-16 text-purple-400 mx-auto mb-4" />
+                  <h2 className="text-2xl font-bold text-white mb-2">Step 2: AI Analysis</h2>
+                  <p className="text-gray-300 mb-4">
+                    Your resume has been extracted. Ready for AI-powered analysis and improvement.
+                  </p>
+                  
+                  {uploadedFile && (
+                    <div className="mb-6 p-4 bg-white/5 rounded-lg inline-block">
+                      <div className="flex items-center gap-3">
+                        <FileText className="h-8 w-8 text-cyan-400" />
+                        <div className="text-left">
+                          <p className="text-white font-medium">{uploadedFile.name}</p>
+                          <p className="text-gray-400 text-sm">{(uploadedFile.size / 1024).toFixed(1)} KB</p>
+                        </div>
+                        <CheckCircle className="h-5 w-5 text-green-400" />
+                      </div>
+                    </div>
+                  )}
+                  
+                  <div className="flex gap-4 justify-center">
+                    <Button
+                      onClick={handleSkipAnalysis}
+                      variant="outline"
+                      className="border-gray-600 text-gray-300 hover:bg-gray-800"
+                    >
+                      Skip Analysis
+                    </Button>
+                    <Button
+                      onClick={handleAIAnalysis}
+                      className="bg-gradient-to-r from-purple-500 to-pink-600 hover:from-purple-600 hover:to-pink-700"
+                    >
+                      <Sparkles className="h-4 w-4 mr-2" />
+                      Start AI Analysis
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </div>
+          </motion.div>
+        )}
+        
+        {/* Back to Dashboard / Previous Step */}
+      <div className="text-center">
+          <Button
+            onClick={() => {
+              if (currentStep > 1) {
+                setCurrentStep((currentStep - 1) as 1 | 2 | 3);
+              } else {
+                router.push('/candidate/dashboard');
+              }
+            }}
+            variant="ghost"
+            className="text-gray-400 hover:text-white"
+          >
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            {currentStep > 1 ? 'Previous Step' : 'Back to Dashboard'}
+          </Button>
       </div>
+    </div>
     );
   }
 
