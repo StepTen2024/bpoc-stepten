@@ -66,7 +66,7 @@ export async function POST(request: NextRequest) {
         .from('candidate_resumes')
         .update({
           resume_data: resumeData,
-          template: template || null,
+          template_used: template?.id || null,
           title: resumeData.name ? `${resumeData.name}'s Resume` : 'My Resume',
           is_public: true, // Make it publicly viewable
           updated_at: new Date().toISOString(),
@@ -88,7 +88,7 @@ export async function POST(request: NextRequest) {
         .insert({
           candidate_id: userId,
           resume_data: resumeData,
-          template: template || null,
+          template_used: template?.id || null,
           slug: slug,
           title: resumeData.name ? `${resumeData.name}'s Resume` : 'My Resume',
           is_primary: true,

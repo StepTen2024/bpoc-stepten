@@ -60,7 +60,7 @@ export async function GET(request: NextRequest) {
       improvedResume: improvedResume,
       slug: resume.slug,
       profilePhoto: extractedResume.profilePhoto || null,
-      template: resume.template || null,
+      template: resume.template_used ? { id: resume.template_used } : null,
       analysis: analysis ? {
         keyStrengths: analysis.key_strengths,
         improvements: analysis.improvements,
