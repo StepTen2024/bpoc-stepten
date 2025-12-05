@@ -46,14 +46,18 @@ export async function PUT(
   try {
     const data = await request.json()
     
-    const updated = await updateCandidate(params.id, {
-      first_name: data.first_name,
-      last_name: data.last_name,
-      phone: data.phone,
-      avatar_url: data.avatar_url,
-      username: data.username,
-      slug: data.slug,
-    })
+    // Only include defined fields for partial update
+    const updateData: any = {}
+    if (data.first_name !== undefined) updateData.first_name = data.first_name
+    if (data.last_name !== undefined) updateData.last_name = data.last_name
+    if (data.phone !== undefined) updateData.phone = data.phone
+    if (data.avatar_url !== undefined) updateData.avatar_url = data.avatar_url
+    if (data.username !== undefined) updateData.username = data.username
+    if (data.slug !== undefined) updateData.slug = data.slug
+    
+    console.log('📝 Updating candidate in Supabase:', { id: params.id, updateData })
+    
+    const updated = await updateCandidate(params.id, updateData)
 
     if (!updated) {
       return NextResponse.json(

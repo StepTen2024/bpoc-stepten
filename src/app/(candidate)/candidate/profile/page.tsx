@@ -16,7 +16,7 @@ import {
   TooltipProvider,
   TooltipTrigger
 } from '@/components/shared/ui/tooltip'
-import { cn } from '@/lib/utils'
+import { cn, slugify } from '@/lib/utils'
 
 const WORK_STATUS_OPTIONS = [
   { value: 'employed', label: 'Employed', icon: '💼' },
@@ -286,42 +286,55 @@ export default function CandidateProfilePage() {
       
       const candidateUpdate: any = {}
       if (formData.username) {
-        candidateUpdate.username = formData.username.toLowerCase()
+        const usernameLower = formData.username.toLowerCase().trim()
+        candidateUpdate.username = usernameLower
+        // Generate slug from username
+        candidateUpdate.slug = slugify(usernameLower)
       }
       if (formData.phone) {
-        candidateUpdate.phone = formData.phone
+        candidateUpdate.phone = formData.phone.trim()
       }
       
       const profileUpdate: any = {
-        bio: formData.bio || null,
-        position: formData.position || null,
-        location: formData.location || null,
-        location_place_id: formData.location_place_id || null,
-        location_lat: formData.location_lat || null,
-        location_lng: formData.location_lng || null,
-        location_city: formData.location_city || null,
-        location_province: formData.location_province || null,
-        location_country: formData.location_country || null,
-        location_barangay: formData.location_barangay || null,
-        location_region: formData.location_region || null,
+        bio: formData.bio?.trim() || null,
+        position: formData.position?.trim() || null,
+        location: formData.location?.trim() || null,
+        location_place_id: formData.location_place_id?.trim() || null,
+        location_lat: formData.location_lat ? Number(formData.location_lat) : null,
+        location_lng: formData.location_lng ? Number(formData.location_lng) : null,
+        location_city: formData.location_city?.trim() || null,
+        location_province: formData.location_province?.trim() || null,
+        location_country: formData.location_country?.trim() || null,
+        location_barangay: formData.location_barangay?.trim() || null,
+        location_region: formData.location_region?.trim() || null,
         birthday: formData.birthday || null,
         gender: formData.gender || null,
-        gender_custom: formData.gender === 'others' ? formData.gender_custom : null,
+        gender_custom: formData.gender === 'others' ? (formData.gender_custom?.trim() || null) : null,
         work_status: formData.work_status || null,
-        current_employer: formData.current_employer || null,
-        current_position: formData.current_position || null,
+        current_employer: formData.current_employer?.trim() || null,
+        current_position: formData.current_position?.trim() || null,
         current_salary: formData.current_salary ? parseFloat(formData.current_salary) : null,
         expected_salary_min: formData.expected_salary_min ? parseFloat(formData.expected_salary_min) : null,
         expected_salary_max: formData.expected_salary_max ? parseFloat(formData.expected_salary_max) : null,
-        notice_period_days: formData.notice_period_days ? parseInt(formData.notice_period_days) : null,
+        notice_period_days: formData.notice_period_days ? parseInt(formData.notice_period_days, 10) : null,
         preferred_shift: formData.preferred_shift || null,
         preferred_work_setup: formData.preferred_work_setup || null,
         current_mood: formData.current_mood === 'prefer_not_to_say' ? null : (formData.current_mood || null),
         profile_completed: true, // Mark as completed when saved
       }
       
-      // Update candidate (username, phone)
+      console.log('💾 Saving profile data:', {
+        candidateUpdate,
+        profileUpdateKeys: Object.keys(profileUpdate),
+        hasBio: !!profileUpdate.bio,
+        hasLocation: !!profileUpdate.location,
+        hasBirthday: !!profileUpdate.birthday,
+        hasGender: !!profileUpdate.gender,
+      })
+      
+      // Update candidate (username, phone, slug) - goes to candidates table in Supabase
       if (Object.keys(candidateUpdate).length > 0) {
+        console.log('📤 Updating candidate in Supabase candidates table:', candidateUpdate)
         const candidateResponse = await fetch(`/api/candidates/${user?.id}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
@@ -329,11 +342,18 @@ export default function CandidateProfilePage() {
         })
         
         if (!candidateResponse.ok) {
-          throw new Error('Failed to update candidate')
+          const errorText = await candidateResponse.text()
+          console.error('❌ Failed to update candidate:', candidateResponse.status, errorText)
+          throw new Error(`Failed to update candidate: ${candidateResponse.status}`)
         }
+        console.log('✅ Candidate updated successfully')
       }
       
-      // Update profile
+      // Update profile - goes to candidate_profiles table in Supabase
+      console.log('📤 Updating profile in Supabase candidate_profiles table:', {
+        candidateId: user?.id,
+        fieldsCount: Object.keys(profileUpdate).length,
+      })
       const profileResponse = await fetch(`/api/candidates/${user?.id}/profile`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
@@ -341,8 +361,11 @@ export default function CandidateProfilePage() {
       })
 
       if (!profileResponse.ok) {
-        throw new Error('Failed to update profile')
+        const errorText = await profileResponse.text()
+        console.error('❌ Failed to update profile:', profileResponse.status, errorText)
+        throw new Error(`Failed to update profile: ${profileResponse.status}`)
       }
+      console.log('✅ Profile updated successfully')
 
         toast({
           title: 'Profile updated',
