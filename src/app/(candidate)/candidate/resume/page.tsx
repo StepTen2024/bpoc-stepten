@@ -38,7 +38,7 @@ import LoadingScreen from '@/components/shared/ui/loading-screen';
 // Header removed - Candidate Dashboard already has sidebar navigation
 import { useAuth } from '@/contexts/AuthContext';
 import { getSessionToken } from '@/lib/auth-helpers';
-import { cleanupLocalStorageAfterSave } from '@/lib/utils';
+import { cleanupLocalStorageAfterSave, processResumeFile, ProcessedResume } from '@/lib/utils';
 import { supabase } from '@/lib/supabase';
 import { toast } from '@/components/shared/ui/toast';
 import Cropper from 'react-easy-crop';
@@ -2197,14 +2197,14 @@ export default function ResumeBuilderPage() {
     );
   }
 
-  // Handle file upload - Step 1
+  // Handle file upload - Step 1 (uses same CloudConvert + GPT pipeline as public version)
   const handleFileUpload = async (file: File) => {
     if (!file) return;
     
     // Validate file type
-    const validTypes = ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
+    const validTypes = ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'image/jpeg', 'image/png', 'image/webp'];
     if (!validTypes.includes(file.type)) {
-      toast.error('Please upload a PDF or Word document');
+      toast.error('Please upload a PDF, Word document, or image');
       return;
     }
     
@@ -2220,11 +2220,6 @@ export default function ResumeBuilderPage() {
     setUploadProgress(0);
     
     try {
-      // Simulate progress for UX
-      const progressInterval = setInterval(() => {
-        setUploadProgress(prev => Math.min(prev + 5, 90));
-      }, 300);
-      
       // Get session token
       const sessionToken = await getSessionToken();
       if (!sessionToken) {
@@ -2233,60 +2228,76 @@ export default function ResumeBuilderPage() {
         return;
       }
       
-      // Convert file to base64
-      const reader = new FileReader();
-      reader.onload = async (e) => {
-        const base64 = e.target?.result as string;
+      // Fetch API keys from secure server endpoint (same as public version)
+      setUploadProgress(5);
+      const keyResponse = await fetch('/api/get-api-key');
+      if (!keyResponse.ok) {
+        throw new Error('Failed to fetch API keys from server');
+      }
+      
+      const keyResult = await keyResponse.json();
+      if (!keyResult.success) {
+        throw new Error(keyResult.error || 'API keys not available');
+      }
+      
+      setUploadProgress(10);
+      
+      // Process file using CloudConvert + GPT pipeline (same as public version)
+      // Set up progress tracking
+      const originalConsoleLog = console.log;
+      const progressMap: Record<string, number> = {
+        '🚀 Starting CloudConvert + GPT OCR pipeline': 15,
+        '📤 Step 1: Converting file to JPEG format': 20,
+        '✅ Step 1 Complete: File converted to JPEG format': 35,
+        '🤖 Step 2: Performing GPT Vision OCR': 40,
+        '✅ Step 2 Complete: Text extracted via GPT OCR': 55,
+        '📄 Step 3: Creating organized DOCX': 60,
+        '✅ Step 3 Complete: Organized DOCX created': 70,
+        '🔄 Step 4: Converting DOCX content to structured JSON': 75,
+        '✅ Step 4 Complete: JSON extracted from DOCX content': 85,
+        '🏗️ Step 5: Building final resume': 90,
+        '✅ Pipeline Complete: CloudConvert + GPT OCR processing successful': 95,
+      };
+      
+      console.log = (...args: any[]) => {
+        const message = args.map(arg => typeof arg === 'object' ? JSON.stringify(arg) : String(arg)).join(' ');
+        originalConsoleLog(...args);
         
-        // Call the resume processing API
-        const response = await fetch('/api/candidates/resume/process', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${sessionToken}`,
-            'x-user-id': String(user?.id)
-          },
-          body: JSON.stringify({
-            file: {
-              name: file.name,
-              type: file.type,
-              size: file.size,
-              data: base64
-            }
-          })
-        });
-        
-        clearInterval(progressInterval);
-        setUploadProgress(100);
-        
-        if (!response.ok) {
-          const errorData = await response.json().catch(() => ({}));
-          throw new Error(errorData.error || 'Failed to process resume');
-        }
-        
-        const result = await response.json();
-        
-        // Set the extracted resume data and move to Step 2
-        if (result.resumeData) {
-          setExtractedResumeData(result.resumeData);
-          setError(null);
-          toast.success('Resume extracted successfully! Ready for AI analysis.');
-          
-          // Move to Step 2 (AI Analysis)
-          setTimeout(() => {
-            setIsProcessingUpload(false);
-            setCurrentStep(2);
-          }, 500);
+        for (const [pattern, progress] of Object.entries(progressMap)) {
+          if (message.includes(pattern)) {
+            setUploadProgress(progress);
+            break;
+          }
         }
       };
       
-      reader.onerror = () => {
-        clearInterval(progressInterval);
-        toast.error('Failed to read file');
-        setIsProcessingUpload(false);
-      };
+      // Call the actual processing function from utils
+      const processedResume = await processResumeFile(
+        file, 
+        keyResult.openaiApiKey, 
+        keyResult.cloudConvertApiKey, 
+        sessionToken
+      );
       
-      reader.readAsDataURL(file);
+      // Restore console.log
+      console.log = originalConsoleLog;
+      
+      setUploadProgress(100);
+      
+      // Set the extracted resume data and move to Step 2
+      if (processedResume) {
+        setExtractedResumeData(processedResume);
+        setError(null);
+        toast.success('Resume extracted successfully! Ready for AI analysis.');
+        
+        // Move to Step 2 (AI Analysis)
+        setTimeout(() => {
+          setIsProcessingUpload(false);
+          setCurrentStep(2);
+        }, 500);
+      } else {
+        throw new Error('No data extracted from resume');
+      }
       
     } catch (err) {
       console.error('Upload error:', err);
