@@ -11,17 +11,11 @@ export async function middleware(request: NextRequest) {
       request.nextUrl.pathname.startsWith('/api/user/saved-resumes') ||
       request.nextUrl.pathname.startsWith('/api/recruiter/jobs') ||
       request.nextUrl.pathname.startsWith('/api/recruiter/activity') ||
-      request.nextUrl.pathname.startsWith('/api/admin/applicants') ||
       request.nextUrl.pathname.startsWith('/api/user/applications') ||
       request.nextUrl.pathname.startsWith('/api/analyze-resume') ||
       request.nextUrl.pathname.startsWith('/api/user/analysis-results') ||
       request.nextUrl.pathname.startsWith('/api/user/extracted-resume') ||
       request.nextUrl.pathname.startsWith('/api/user/saved-resume/') ||
-      request.nextUrl.pathname.startsWith('/api/admin/jobs') ||
-      request.nextUrl.pathname.startsWith('/api/admin/members') ||
-      request.nextUrl.pathname.startsWith('/api/admin/jobs/improve') ||
-      request.nextUrl.pathname.startsWith('/api/admin/jobs/process') ||
-      request.nextUrl.pathname.startsWith('/api/admin/processed-jobs') ||
       request.nextUrl.pathname.startsWith('/api/games/typing-hero/session') ||
       request.nextUrl.pathname.startsWith('/api/games/disc-personality/session') ||
       request.nextUrl.pathname.startsWith('/api/games/disc/session') ||
@@ -147,7 +141,6 @@ export const config = {
     '/api/recruiter/jobs',
     '/api/recruiter/jobs/:path*',
     '/api/recruiter/activity',
-    '/api/admin/applicants',
     '/api/user/applications',
     '/api/analyze-resume',
     '/api/user/analysis-results',
@@ -156,13 +149,6 @@ export const config = {
     '/api/user/ai-analysis-score',
     '/api/user/games-count',
     '/api/user/saved-resume/:path*',
-    '/api/admin/jobs',
-    '/api/admin/jobs/:path*',
-    '/api/admin/members',
-    '/api/admin/jobs/improve',
-    '/api/admin/jobs/process'
-    ,'/api/admin/processed-jobs',
-    '/api/admin/processed-jobs/:path*',
     '/api/games/typing-hero/session',
     '/api/games/disc-personality/session',
     '/api/games/disc/session',
