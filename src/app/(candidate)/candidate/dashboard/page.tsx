@@ -361,6 +361,5 @@ export default function CandidateDashboardPage() {
           </Link>
         </div>
       </div>
-    </div>
   )
 }
