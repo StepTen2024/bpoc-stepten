@@ -8,7 +8,6 @@ import { Label } from '@/components/shared/ui/label'
 import { Textarea } from '@/components/shared/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/shared/ui/select'
 import { useToast } from '@/hooks/use-toast'
-import PlacesAutocomplete from '@/components/shared/ui/places-autocomplete'
 import { User, MapPin, Phone, Briefcase, FileText, Loader2, CheckCircle, X, Info, Sparkles, Camera } from 'lucide-react'
 import Image from 'next/image'
 import { uploadProfilePhoto, optimizeImage } from '@/lib/storage'
@@ -641,21 +640,11 @@ export default function CandidateProfilePage() {
                 </Label>
                 <div className="relative">
                   <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-500 z-10" />
-                  <PlacesAutocomplete
+                  <Input
+                    id="location"
                     value={formData.location}
+                    onChange={(e) => handleInputChange('location', e.target.value)}
                     placeholder="Type city, province, municipality, or barangay"
-                    onChange={(val) => handleInputChange('location', val)}
-                    onSelect={(p) => {
-                      handleInputChange('location', p.description)
-                      handleInputChange('location_place_id', p.place_id)
-                      handleInputChange('location_lat', p.lat)
-                      handleInputChange('location_lng', p.lng)
-                      handleInputChange('location_city', p.city || '')
-                      handleInputChange('location_province', p.province || '')
-                      handleInputChange('location_country', p.country || '')
-                      handleInputChange('location_barangay', p.barangay || '')
-                      handleInputChange('location_region', p.region || '')
-                    }}
                     className={cn(inputClass, "pl-10")}
                   />
                 </div>
