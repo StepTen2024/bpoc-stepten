@@ -5,7 +5,6 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { useAuth } from '@/contexts/AuthContext'
 import { supabase } from '@/lib/supabase'
-import ProfileCompletionModal from '@/components/candidate/ProfileCompletionModal'
 import { Button } from '@/components/shared/ui/button'
 import { Badge } from '@/components/shared/ui/badge'
 import { 
@@ -48,7 +47,6 @@ export default function CandidateDashboardPage() {
   const [profile, setProfile] = useState<ProfileData | null>(null)
   const [stats, setStats] = useState<DashboardStats | null>(null)
   const [loadingStats, setLoadingStats] = useState(true)
-  const [showProfileModal, setShowProfileModal] = useState(false)
   const [checkingAuth, setCheckingAuth] = useState(true)
   const [currentUserId, setCurrentUserId] = useState<string | null>(null)
 
@@ -182,14 +180,7 @@ export default function CandidateDashboardPage() {
   const totalSteps = completionSteps.length
 
   return (
-    <>
-      <ProfileCompletionModal
-        open={showProfileModal}
-        onOpenChange={setShowProfileModal}
-        userId={currentUserId}
-      />
-
-      <div className="space-y-8">
+    <div className="space-y-8">
         {/* Header */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
@@ -370,6 +361,6 @@ export default function CandidateDashboardPage() {
           </Link>
         </div>
       </div>
-    </>
+    </div>
   )
 }
