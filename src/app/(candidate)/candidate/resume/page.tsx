@@ -2282,13 +2282,8 @@ export default function ResumeBuilderPage() {
     }
   };
 
-  // Handle drag and drop
-  const handleDragOver = (e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-  };
-
-  const handleDrop = (e: React.DragEvent) => {
+  // Handle drop for upload UI (handleDragOver already exists in file)
+  const handleUploadDrop = (e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
     
@@ -2331,7 +2326,7 @@ export default function ResumeBuilderPage() {
               <div 
                 className="text-center py-12 border-2 border-dashed border-white/20 rounded-lg hover:border-cyan-400/50 transition-colors cursor-pointer"
                 onDragOver={handleDragOver}
-                onDrop={handleDrop}
+                onDrop={handleUploadDrop}
                 onClick={() => fileInputRef.current?.click()}
               >
                 <input
