@@ -181,9 +181,20 @@ export async function updateCandidate(
     avatar_url?: string | null
     username?: string | null
     slug?: string | null
-  }
+  },
+  useAdmin: boolean = false
 ): Promise<Candidate | null> {
-  const supabase = await createClient()
+  // Use admin client if requested (for server-side operations that need to bypass RLS)
+  const supabase = useAdmin ? supabaseAdmin : await createClient()
+
+  // First check if candidate exists
+  const existing = await getCandidateById(id, useAdmin)
+  if (!existing) {
+    console.error('❌ [updateCandidate] Candidate not found:', id)
+    return null
+  }
+
+  console.log('📝 [updateCandidate] Updating candidate:', { id, updateData: data })
 
   const { data: candidate, error } = await supabase
     .from('candidates')
@@ -192,7 +203,23 @@ export async function updateCandidate(
     .select()
     .single()
 
-  if (error || !candidate) return null
+  if (error) {
+    console.error('❌ [updateCandidate] Update error:', {
+      code: error.code,
+      message: error.message,
+      details: error.details,
+      hint: error.hint,
+      candidate_id: id,
+    })
+    return null
+  }
+
+  if (!candidate) {
+    console.error('❌ [updateCandidate] No candidate returned from update')
+    return null
+  }
+
+  console.log('✅ [updateCandidate] Candidate updated successfully:', candidate.id)
 
   return {
     id: candidate.id,

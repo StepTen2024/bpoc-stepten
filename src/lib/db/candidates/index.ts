@@ -12,6 +12,6 @@ export const getCandidateByEmail = (email: string) => supabase.getCandidateByEma
 export const getCandidateByUsername = (username: string) => supabase.getCandidateByUsername(username)
 export const getCandidateBySlug = (slug: string) => supabase.getCandidateBySlug(slug)
 export const createCandidate = (data: Parameters<typeof supabase.createCandidate>[0]) => supabase.createCandidate(data)
-export const updateCandidate = (id: string, data: Parameters<typeof supabase.updateCandidate>[1]) => supabase.updateCandidate(id, data)
+export const updateCandidate = (id: string, data: Parameters<typeof supabase.updateCandidate>[1], useAdmin?: boolean) => supabase.updateCandidate(id, data, useAdmin)
 export const deleteCandidate = (id: string) => supabase.deleteCandidate(id)
 
