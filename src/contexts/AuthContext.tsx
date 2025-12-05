@@ -104,12 +104,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           const adminLevel = session.user.user_metadata?.admin_level || session.user.user_metadata?.role
           const isRecruiter = adminLevel === 'recruiter' || adminLevel === 'admin' || session.user.user_metadata?.recruiterSignupFlow
           
-          // Only redirect if not already on candidate/recruiter pages and not a recruiter
+          // Only redirect if not already on candidate/recruiter/admin pages and not a recruiter
           const currentPath = window.location.pathname
           const isOnCandidatePage = currentPath.startsWith('/candidate')
           const isOnRecruiterPage = currentPath.startsWith('/recruiter')
+          const isOnAdminPage = currentPath.startsWith('/admin')
           
-          if (!isRecruiter && !isOnCandidatePage && !isOnRecruiterPage && currentPath !== '/candidate/dashboard') {
+          if (!isRecruiter && !isOnCandidatePage && !isOnRecruiterPage && !isOnAdminPage && currentPath !== '/candidate/dashboard') {
             // Small delay to ensure sync completes
             setTimeout(() => {
               window.location.href = '/candidate/dashboard'

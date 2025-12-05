@@ -6,7 +6,6 @@ import { motion } from 'framer-motion';
 import { Shield, Mail, Lock, Eye, EyeOff, AlertCircle, User, CheckCircle } from 'lucide-react';
 import { Button } from '@/components/shared/ui/button';
 import { Input } from '@/components/shared/ui/input';
-import { supabase } from '@/lib/supabase';
 import Link from 'next/link';
 
 export default function AdminSignupPage() {
@@ -46,58 +45,24 @@ export default function AdminSignupPage() {
     }
 
     try {
-      // 1. Create auth user with Supabase Auth
-      const { data: authData, error: authError } = await supabase.auth.signUp({
-        email: formData.email,
-        password: formData.password,
-        options: {
-          data: {
-            first_name: formData.firstName,
-            last_name: formData.lastName,
-          }
-        }
+      // Call API route to create admin user (bypasses RLS)
+      const response = await fetch('/api/admin/signup', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: formData.email,
+          password: formData.password,
+          firstName: formData.firstName,
+          lastName: formData.lastName,
+        }),
       });
 
-      if (authError) {
-        throw new Error(authError.message);
-      }
+      const result = await response.json();
 
-      if (!authData.user) {
-        throw new Error('Failed to create user');
-      }
-
-      const userId = authData.user.id;
-
-      // 2. Create bpoc_users record
-      const { error: bpocUserError } = await supabase
-        .from('bpoc_users')
-        .insert({
-          id: userId,
-          email: formData.email,
-          first_name: formData.firstName,
-          last_name: formData.lastName,
-          role: 'admin',
-          is_active: true,
-        });
-
-      if (bpocUserError) {
-        console.error('BPOC User Error:', bpocUserError);
-        // Don't throw - the auth user is created, we can fix this
-      }
-
-      // 3. Create bpoc_profiles record
-      const { error: profileError } = await supabase
-        .from('bpoc_profiles')
-        .insert({
-          bpoc_user_id: userId,
-          bio: `${formData.firstName} ${formData.lastName} - BPOC Administrator`,
-          department: 'Administration',
-          permissions: ['all'],
-        });
-
-      if (profileError) {
-        console.error('Profile Error:', profileError);
-        // Don't throw - we can fix this later
+      if (!response.ok) {
+        throw new Error(result.error || 'Signup failed');
       }
 
       setSuccess(true);
