@@ -3,10 +3,12 @@
  * Direct queries to new Supabase candidate_profiles table
  */
 import { createClient } from '@/lib/supabase/server'
+import { supabaseAdmin } from '@/lib/supabase/admin'
 import type { CandidateProfile } from './queries.prisma'
 
-export async function getProfileByCandidate(candidateId: string): Promise<CandidateProfile | null> {
-  const supabase = await createClient()
+export async function getProfileByCandidate(candidateId: string, useAdmin: boolean = false): Promise<CandidateProfile | null> {
+  // Use admin client if requested (for server-side operations that need to bypass RLS)
+  const supabase = useAdmin ? supabaseAdmin : await createClient()
 
   const { data, error } = await supabase
     .from('candidate_profiles')
@@ -14,7 +16,17 @@ export async function getProfileByCandidate(candidateId: string): Promise<Candid
     .eq('candidate_id', candidateId)
     .single()
 
-  if (error || !data) return null
+  if (error || !data) {
+    if (error && error.code !== 'PGRST116') { // PGRST116 = no rows returned (expected)
+      console.error('❌ [getProfileByCandidate] Query error:', {
+        code: error.code,
+        message: error.message,
+        candidate_id: candidateId,
+        useAdmin,
+      })
+    }
+    return null
+  }
 
   return {
     id: data.id,
@@ -54,9 +66,13 @@ export async function getProfileByCandidate(candidateId: string): Promise<Candid
 
 export async function updateProfile(
   candidateId: string,
-  data: Partial<CandidateProfile>
+  data: Partial<CandidateProfile>,
+  useAdmin: boolean = false
 ): Promise<CandidateProfile | null> {
-  const supabase = await createClient()
+  // Use admin client if requested (for server-side operations that need to bypass RLS)
+  const supabase = useAdmin ? supabaseAdmin : await createClient()
+
+  console.log('📝 [updateProfile] Updating profile:', { candidateId, updateData: data, useAdmin })
 
   const { data: profile, error } = await supabase
     .from('candidate_profiles')
@@ -65,7 +81,24 @@ export async function updateProfile(
     .select()
     .single()
 
-  if (error || !profile) return null
+  if (error) {
+    console.error('❌ [updateProfile] Update error:', {
+      code: error.code,
+      message: error.message,
+      details: error.details,
+      hint: error.hint,
+      candidate_id: candidateId,
+      useAdmin,
+    })
+    return null
+  }
+
+  if (!profile) {
+    console.error('❌ [updateProfile] No profile returned from update')
+    return null
+  }
+
+  console.log('✅ [updateProfile] Profile updated successfully:', profile.id)
 
   return {
     id: profile.id,
@@ -118,7 +151,8 @@ export async function createProfile(
   })
 
   try {
-    const supabase = await createClient()
+    // Use admin client to bypass RLS for creation
+    const supabase = supabaseAdmin
 
     const insertData = {
       candidate_id: candidateId,

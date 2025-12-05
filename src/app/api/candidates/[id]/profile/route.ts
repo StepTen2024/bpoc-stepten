@@ -10,7 +10,8 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   try {
-    let profile = await getProfileByCandidate(params.id)
+    // Use admin client to bypass RLS for fetching profile
+    let profile = await getProfileByCandidate(params.id, true)
     
     // Create profile if it doesn't exist
     if (!profile) {
@@ -38,26 +39,33 @@ export async function PUT(
   try {
     const data = await request.json()
     
-    let profile = await getProfileByCandidate(params.id)
+    console.log('📝 [PUT /api/candidates/[id]/profile] Updating profile:', { id: params.id, data })
+    
+    // Use admin client to bypass RLS for profile operations
+    let profile = await getProfileByCandidate(params.id, true)
     
     if (!profile) {
+      console.log('➕ Profile not found, creating new profile...')
       profile = await createProfile(params.id, data)
     } else {
-      profile = await updateProfile(params.id, data)
+      console.log('🔄 Profile exists, updating...')
+      profile = await updateProfile(params.id, data, true) // Use admin client
     }
 
     if (!profile) {
+      console.error('❌ Failed to update/create profile')
       return NextResponse.json(
         { error: 'Failed to update profile' },
         { status: 500 }
       )
     }
 
+    console.log('✅ Profile updated successfully:', profile.id)
     return NextResponse.json({ profile })
   } catch (error) {
-    console.error('Error updating profile:', error)
+    console.error('❌ Error updating profile:', error)
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { error: 'Internal server error', details: error instanceof Error ? error.message : 'Unknown error' },
       { status: 500 }
     )
   }
