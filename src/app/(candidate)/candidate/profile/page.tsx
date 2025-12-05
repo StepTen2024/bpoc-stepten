@@ -17,7 +17,7 @@ import {
   TooltipProvider,
   TooltipTrigger
 } from '@/components/shared/ui/tooltip'
-import { cn } from '@/lib/utils'
+import { cn, slugify } from '@/lib/utils'
 
 const WORK_STATUS_OPTIONS = [
   { value: 'employed', label: 'Employed', icon: '💼' },
@@ -118,70 +118,93 @@ export default function CandidateProfilePage() {
   // Users can now fill in these fields regardless of work status
 
   async function fetchProfile() {
+    if (!user?.id) {
+      console.warn('⚠️ No user ID available for fetching profile')
+      return
+    }
+
     try {
       setLoading(true)
+      console.log('🔄 Fetching profile for user:', user.id)
+      
       // Fetch candidate data including avatar_url
-      const candidateRes = await fetch(`/api/candidates/${user?.id}`)
-      if (candidateRes.ok) {
-        const { candidate, profile: candidateProfile } = await candidateRes.json()
-        console.log('📸 Fetched avatar_url:', candidate.avatar_url)
-        setAvatarUrl(candidate.avatar_url)
-        
-        // Also fetch full profile for other data
-        // Fetch profile directly from candidates API which uses admin client
-        const profileRes = await fetch(`/api/candidates/${user?.id}/profile`)
-        let profileData = null
-        if (profileRes.ok) {
-          const profileResult = await profileRes.json()
-          profileData = profileResult.profile
-        }
-        
-        // Also fetch user profile for additional fields
-        const response = await fetch(`/api/user/profile?userId=${user?.id}`)
-        if (response.ok) {
-          const data = await response.json()
-          setProfile(data.user)
-          // Merge profile data if available
-          if (profileData) {
-            profileData = { ...data.user, ...profileData }
-          } else {
-            profileData = data.user
-          }
-        }
-        
-        // Use profileData if available, otherwise use candidateProfile or empty defaults
-        const userData = profileData || candidateProfile || {}
-        setFormData({
-          username: candidate.username || userData.username || '',
-          bio: userData.bio || '',
-          position: userData.position || '',
-          location: userData.location || '',
-          location_place_id: userData.location_place_id || '',
-          location_lat: userData.location_lat || null,
-          location_lng: userData.location_lng || null,
-          location_city: userData.location_city || '',
-          location_province: userData.location_province || '',
-          location_country: userData.location_country || '',
-          location_barangay: userData.location_barangay || '',
-          location_region: userData.location_region || '',
-          birthday: userData.birthday || '',
-          gender: userData.gender || '',
-          gender_custom: userData.gender_custom || '',
-          phone: candidate.phone || userData.phone || '',
-          work_status: userData.work_status || '',
-          current_employer: userData.company || userData.current_employer || '',
-          current_position: userData.current_position || '',
-          current_salary: userData.current_salary ? String(userData.current_salary) : '',
-          expected_salary_min: userData.expected_salary_min ? String(userData.expected_salary_min) : '',
-          expected_salary_max: userData.expected_salary_max ? String(userData.expected_salary_max) : '',
-          notice_period_days: userData.notice_period_days ? String(userData.notice_period_days) : '',
-          preferred_shift: userData.preferred_shift || '',
-          preferred_work_setup: userData.preferred_work_setup || '',
-          current_mood: userData.current_mood || 'prefer_not_to_say',
-        })
+      const candidateRes = await fetch(`/api/candidates/${user.id}`)
+      if (!candidateRes.ok) {
+        throw new Error(`Failed to fetch candidate: ${candidateRes.status}`)
       }
+      
+      const { candidate, profile: candidateProfile } = await candidateRes.json()
+      console.log('✅ Fetched candidate:', { 
+        id: candidate.id, 
+        username: candidate.username, 
+        avatar_url: candidate.avatar_url 
+      })
+      
+      if (candidate.avatar_url) {
+        setAvatarUrl(candidate.avatar_url)
+      }
+      
+      // Fetch profile directly from candidates API which uses admin client
+      const profileRes = await fetch(`/api/candidates/${user.id}/profile`)
+      let profileData = null
+      if (profileRes.ok) {
+        const profileResult = await profileRes.json()
+        profileData = profileResult.profile
+        console.log('✅ Fetched profile:', { 
+          id: profileData?.id, 
+          work_status: profileData?.work_status,
+          location: profileData?.location 
+        })
+      } else {
+        console.warn('⚠️ Profile fetch failed, using candidate profile or defaults')
+      }
+      
+      // Use profileData if available, otherwise use candidateProfile or empty defaults
+      const userData = profileData || candidateProfile || {}
+      
+      // Set form data with proper defaults and type conversions
+      setFormData({
+        username: candidate.username || userData.username || '',
+        bio: userData.bio || '',
+        position: userData.position || '',
+        location: userData.location || '',
+        location_place_id: userData.location_place_id || '',
+        location_lat: userData.location_lat || null,
+        location_lng: userData.location_lng || null,
+        location_city: userData.location_city || '',
+        location_province: userData.location_province || '',
+        location_country: userData.location_country || '',
+        location_barangay: userData.location_barangay || '',
+        location_region: userData.location_region || '',
+        birthday: userData.birthday || '',
+        gender: userData.gender || '',
+        gender_custom: userData.gender_custom || '',
+        phone: candidate.phone || userData.phone || '',
+        work_status: userData.work_status || '',
+        current_employer: userData.current_employer || userData.company || '',
+        current_position: userData.current_position || '',
+        current_salary: userData.current_salary ? String(userData.current_salary) : '',
+        expected_salary_min: userData.expected_salary_min ? String(userData.expected_salary_min) : '',
+        expected_salary_max: userData.expected_salary_max ? String(userData.expected_salary_max) : '',
+        notice_period_days: userData.notice_period_days ? String(userData.notice_period_days) : '',
+        preferred_shift: userData.preferred_shift || '',
+        preferred_work_setup: userData.preferred_work_setup || '',
+        current_mood: userData.current_mood || 'prefer_not_to_say',
+      })
+      
+      // Also update profile state for other components
+      if (profileData) {
+        setProfile({
+          ...candidate,
+          ...profileData,
+        })
+      } else {
+        setProfile(candidate)
+      }
+      
+      console.log('✅ Profile loaded successfully')
     } catch (error) {
-      console.error('Error fetching profile:', error)
+      console.error('❌ Error fetching profile:', error)
       toast({
         title: 'Error',
         description: 'Failed to load profile. Please refresh the page.',
@@ -335,43 +358,119 @@ export default function CandidateProfilePage() {
     try {
       setSaving(true)
       
-      const candidateUpdate: any = {}
-      if (formData.username) {
-        candidateUpdate.username = formData.username.toLowerCase()
+      // Validate required fields
+      if (!formData.location || formData.location.trim() === '') {
+        toast({
+          title: 'Validation Error',
+          description: 'Location is required.',
+          variant: 'destructive',
+        })
+        setSaving(false)
+        return
       }
-      if (formData.phone) {
-        candidateUpdate.phone = formData.phone
+
+      if (!formData.birthday || formData.birthday.trim() === '') {
+        toast({
+          title: 'Validation Error',
+          description: 'Birthday is required.',
+          variant: 'destructive',
+        })
+        setSaving(false)
+        return
+      }
+
+      if (!formData.work_status || formData.work_status.trim() === '') {
+        toast({
+          title: 'Validation Error',
+          description: 'Work status is required.',
+          variant: 'destructive',
+        })
+        setSaving(false)
+        return
+      }
+
+      if (!formData.expected_salary_min || !formData.expected_salary_max) {
+        toast({
+          title: 'Validation Error',
+          description: 'Expected salary range is required.',
+          variant: 'destructive',
+        })
+        setSaving(false)
+        return
+      }
+
+      if (!formData.preferred_shift || formData.preferred_shift.trim() === '') {
+        toast({
+          title: 'Validation Error',
+          description: 'Preferred shift is required.',
+          variant: 'destructive',
+        })
+        setSaving(false)
+        return
+      }
+
+      if (!formData.preferred_work_setup || formData.preferred_work_setup.trim() === '') {
+        toast({
+          title: 'Validation Error',
+          description: 'Preferred work setup is required.',
+          variant: 'destructive',
+        })
+        setSaving(false)
+        return
       }
       
+      // Prepare candidate update (username, phone, slug)
+      const candidateUpdate: any = {}
+      if (formData.username && formData.username.trim()) {
+        const usernameLower = formData.username.toLowerCase().trim()
+        candidateUpdate.username = usernameLower
+        // Generate slug from username
+        candidateUpdate.slug = slugify(usernameLower)
+      }
+      if (formData.phone && formData.phone.trim()) {
+        candidateUpdate.phone = formData.phone.trim()
+      }
+      
+      // Prepare profile update with proper data types
       const profileUpdate: any = {
-        bio: formData.bio || null,
-        position: formData.position || null,
-        location: formData.location || null,
-        location_place_id: formData.location_place_id || null,
-        location_lat: formData.location_lat || null,
-        location_lng: formData.location_lng || null,
-        location_city: formData.location_city || null,
-        location_province: formData.location_province || null,
-        location_country: formData.location_country || null,
-        location_barangay: formData.location_barangay || null,
-        location_region: formData.location_region || null,
-        birthday: formData.birthday || null,
+        bio: formData.bio?.trim() || null,
+        position: formData.position?.trim() || null,
+        location: formData.location?.trim() || null,
+        location_place_id: formData.location_place_id?.trim() || null,
+        location_lat: formData.location_lat ? parseFloat(String(formData.location_lat)) : null,
+        location_lng: formData.location_lng ? parseFloat(String(formData.location_lng)) : null,
+        location_city: formData.location_city?.trim() || null,
+        location_province: formData.location_province?.trim() || null,
+        location_country: formData.location_country?.trim() || null,
+        location_barangay: formData.location_barangay?.trim() || null,
+        location_region: formData.location_region?.trim() || null,
+        birthday: formData.birthday?.trim() || null,
         gender: formData.gender || null,
-        gender_custom: formData.gender === 'others' ? formData.gender_custom : null,
+        gender_custom: formData.gender === 'others' ? (formData.gender_custom?.trim() || null) : null,
         work_status: formData.work_status || null,
-        current_employer: formData.current_employer || null,
-        current_position: formData.current_position || null,
-        current_salary: formData.current_salary ? parseFloat(formData.current_salary) : null,
-        expected_salary_min: formData.expected_salary_min ? parseFloat(formData.expected_salary_min) : null,
-        expected_salary_max: formData.expected_salary_max ? parseFloat(formData.expected_salary_max) : null,
-        notice_period_days: formData.notice_period_days ? parseInt(formData.notice_period_days) : null,
+        current_employer: formData.current_employer?.trim() || null,
+        current_position: formData.current_position?.trim() || null,
+        current_salary: formData.current_salary && formData.current_salary.trim() ? parseFloat(formData.current_salary) : null,
+        expected_salary_min: formData.expected_salary_min && formData.expected_salary_min.trim() ? parseFloat(formData.expected_salary_min) : null,
+        expected_salary_max: formData.expected_salary_max && formData.expected_salary_max.trim() ? parseFloat(formData.expected_salary_max) : null,
+        notice_period_days: formData.notice_period_days && formData.notice_period_days.trim() ? parseInt(formData.notice_period_days) : null,
         preferred_shift: formData.preferred_shift || null,
         preferred_work_setup: formData.preferred_work_setup || null,
         current_mood: formData.current_mood === 'prefer_not_to_say' || !formData.current_mood ? null : formData.current_mood,
         profile_completed: true, // Mark as completed when saved
       }
       
-      // Update candidate (username, phone)
+      console.log('💾 Saving profile:', {
+        candidateUpdate,
+        profileUpdate: {
+          ...profileUpdate,
+          current_salary: profileUpdate.current_salary,
+          expected_salary_min: profileUpdate.expected_salary_min,
+          expected_salary_max: profileUpdate.expected_salary_max,
+        }
+      })
+      
+      // Update candidate (username, phone, slug) - do this first
       if (Object.keys(candidateUpdate).length > 0) {
         const candidateResponse = await fetch(`/api/candidates/${user?.id}`, {
           method: 'PUT',
@@ -380,11 +479,17 @@ export default function CandidateProfilePage() {
         })
         
         if (!candidateResponse.ok) {
-          throw new Error('Failed to update candidate')
+          const errorData = await candidateResponse.json().catch(() => ({}))
+          console.error('❌ Candidate update failed:', {
+            status: candidateResponse.status,
+            statusText: candidateResponse.statusText,
+            error: errorData,
+          })
+          throw new Error(errorData.details || errorData.error || 'Failed to update candidate')
         }
       }
       
-      // Update profile
+      // Update profile - do this second
       const profileResponse = await fetch(`/api/candidates/${user?.id}/profile`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
@@ -401,16 +506,22 @@ export default function CandidateProfilePage() {
         throw new Error(errorData.details || errorData.error || 'Failed to update profile')
       }
 
-        toast({
-          title: 'Profile updated',
-          description: 'Your profile has been saved successfully.',
-        })
-        fetchProfile()
+      const profileResult = await profileResponse.json()
+      console.log('✅ Profile saved successfully:', profileResult)
+
+      toast({
+        title: 'Profile updated',
+        description: 'Your profile has been saved successfully.',
+      })
+      
+      // Reload profile data to ensure UI is in sync
+      await fetchProfile()
     } catch (error) {
-      console.error('Error saving profile:', error)
+      console.error('❌ Error saving profile:', error)
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred'
       toast({
         title: 'Error',
-        description: 'Failed to update profile. Please try again.',
+        description: `Failed to update profile: ${errorMessage}`,
         variant: 'destructive',
       })
     } finally {
