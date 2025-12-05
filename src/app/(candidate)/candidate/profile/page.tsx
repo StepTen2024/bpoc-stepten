@@ -143,12 +143,25 @@ export default function CandidateProfilePage() {
         setAvatarUrl(candidate.avatar_url)
         
         // Also fetch full profile for other data
-        const response = await fetch(`/api/user/profile?userId=${user?.id}`)
+        // Fetch profile directly from candidates API which uses admin client
+        const profileRes = await fetch(`/api/candidates/${user?.id}/profile`)
         let profileData = null
+        if (profileRes.ok) {
+          const profileResult = await profileRes.json()
+          profileData = profileResult.profile
+        }
+        
+        // Also fetch user profile for additional fields
+        const response = await fetch(`/api/user/profile?userId=${user?.id}`)
         if (response.ok) {
           const data = await response.json()
-          profileData = data.user
-          setProfile(profileData)
+          setProfile(data.user)
+          // Merge profile data if available
+          if (profileData) {
+            profileData = { ...data.user, ...profileData }
+          } else {
+            profileData = data.user
+          }
         }
         
         // Use profileData if available, otherwise use candidateProfile or empty defaults
