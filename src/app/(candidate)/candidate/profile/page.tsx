@@ -1115,30 +1115,6 @@ export default function CandidateProfilePage() {
             </div>
           </div>
         </div>
-
-        {/* Save Button Footer */}
-        <div className="sticky bottom-0 bg-[#0B0B0D]/95 backdrop-blur-sm border-t border-white/10 p-4 -mx-4 md:-mx-8 -mb-8 md:-mb-8">
-          <div className="flex justify-end">
-            <Button 
-              onClick={handleSave} 
-              disabled={saving} 
-              size="lg" 
-              className="bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white shadow-lg shadow-cyan-500/25 transition-all hover:scale-105 min-w-[140px]"
-            >
-              {saving ? (
-                <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Saving...
-                </>
-              ) : (
-                <>
-                  <CheckCircle className="w-4 h-4 mr-2" />
-                  Save Profile
-                </>
-              )}
-            </Button>
-          </div>
-        </div>
       </div>
     </TooltipProvider>
   )
