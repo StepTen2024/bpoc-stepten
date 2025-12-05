@@ -1,0 +1,405 @@
+'use client';
+
+import React, { useState, useEffect } from 'react';
+import { motion } from 'framer-motion';
+import { 
+  Sparkles, 
+  FileText, 
+  Loader2,
+  ArrowLeft,
+  ArrowRight,
+  CheckCircle,
+  AlertCircle,
+  Brain,
+  Target,
+  TrendingUp,
+  Award,
+  SkipForward
+} from 'lucide-react';
+import { Button } from '@/components/shared/ui/button';
+import { useRouter } from 'next/navigation';
+import { useAuth } from '@/contexts/AuthContext';
+import { getSessionToken } from '@/lib/auth-helpers';
+import { toast } from '@/components/shared/ui/toast';
+
+/**
+ * Step 2: AI Analysis
+ * Clean, focused page for Claude AI analysis
+ */
+export default function ResumeAnalysisPage() {
+  const router = useRouter();
+  const { user } = useAuth();
+  
+  const [isLoading, setIsLoading] = useState(true);
+  const [extractedData, setExtractedData] = useState<any>(null);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [progress, setProgress] = useState(0);
+  const [error, setError] = useState<string | null>(null);
+  const [analysisComplete, setAnalysisComplete] = useState(false);
+  const [analysisResults, setAnalysisResults] = useState<any>(null);
+
+  // Load extracted resume data
+  useEffect(() => {
+    const loadExtractedData = async () => {
+      try {
+        const sessionToken = await getSessionToken();
+        if (!sessionToken || !user?.id) {
+          setError('Please log in to continue');
+          setIsLoading(false);
+          return;
+        }
+
+        // Fetch extracted resume from database
+        const response = await fetch('/api/user/extracted-resume', {
+          headers: {
+            'Authorization': `Bearer ${sessionToken}`,
+            'x-user-id': String(user.id)
+          }
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          if (data.hasData && data.resumeData) {
+            setExtractedData(data.resumeData);
+          } else {
+            // No extracted data - redirect to upload
+            toast.error('No extracted resume found. Please upload first.');
+            router.push('/candidate/resume/upload');
+            return;
+          }
+        } else {
+          router.push('/candidate/resume/upload');
+          return;
+        }
+      } catch (error) {
+        console.error('Error loading extracted data:', error);
+        setError('Failed to load resume data');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadExtractedData();
+  }, [user?.id, router]);
+
+  const handleStartAnalysis = async () => {
+    if (!extractedData) return;
+    
+    setIsAnalyzing(true);
+    setProgress(0);
+    setError(null);
+    
+    try {
+      const sessionToken = await getSessionToken();
+      if (!sessionToken) {
+        throw new Error('Please log in to continue');
+      }
+      
+      // Simulate progress
+      const progressInterval = setInterval(() => {
+        setProgress(prev => {
+          if (prev >= 85) {
+            clearInterval(progressInterval);
+            return prev;
+          }
+          return prev + Math.random() * 10;
+        });
+      }, 500);
+      
+      // Call AI analysis API
+      const response = await fetch('/api/candidates/ai-analysis/analyze', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${sessionToken}`,
+          'x-user-id': String(user?.id)
+        },
+        body: JSON.stringify({
+          resumeData: extractedData,
+          candidateId: user?.id
+        })
+      });
+      
+      clearInterval(progressInterval);
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || 'AI analysis failed');
+      }
+      
+      const result = await response.json();
+      setProgress(100);
+      setAnalysisResults(result.analysis);
+      setAnalysisComplete(true);
+      
+      toast.success('AI analysis complete!');
+      
+      // Navigate to build page after short delay
+      setTimeout(() => {
+        router.push('/candidate/resume/build');
+      }, 1500);
+      
+    } catch (err) {
+      console.error('AI Analysis error:', err);
+      setError(err instanceof Error ? err.message : 'AI analysis failed');
+      setIsAnalyzing(false);
+    }
+  };
+
+  const handleSkipAnalysis = () => {
+    toast.info('Skipping AI analysis...');
+    router.push('/candidate/resume/build');
+  };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-[60vh] flex items-center justify-center">
+        <Loader2 className="h-8 w-8 text-purple-400 animate-spin" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-8">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold text-white">Step 2: AI Analysis</h1>
+          <p className="text-gray-400 mt-1">
+            Let Claude AI analyze and enhance your resume
+          </p>
+        </div>
+        <Button
+          variant="ghost"
+          onClick={() => router.push('/candidate/resume')}
+          className="text-gray-400 hover:text-white"
+        >
+          <ArrowLeft className="h-4 w-4 mr-2" />
+          Back
+        </Button>
+      </div>
+
+      {/* Step Indicator */}
+      <div className="flex items-center justify-center gap-4">
+        <div className="flex items-center gap-2 text-cyan-400">
+          <div className="w-10 h-10 rounded-full bg-cyan-500 flex items-center justify-center">
+            <CheckCircle className="h-5 w-5 text-white" />
+          </div>
+          <span className="font-medium">Upload</span>
+        </div>
+        <div className="w-16 h-0.5 bg-cyan-500" />
+        <div className="flex items-center gap-2 text-purple-400">
+          <div className="w-10 h-10 rounded-full border-2 border-purple-400 bg-purple-500/20 flex items-center justify-center">
+            <Sparkles className="h-5 w-5" />
+          </div>
+          <span className="font-medium">Analysis</span>
+        </div>
+        <div className="w-16 h-0.5 bg-gray-700" />
+        <div className="flex items-center gap-2 text-gray-500">
+          <div className="w-10 h-10 rounded-full border-2 border-gray-600 flex items-center justify-center">
+            <span className="text-sm">3</span>
+          </div>
+          <span>Build</span>
+        </div>
+      </div>
+
+      {/* Main Content */}
+      <motion.div 
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="relative group overflow-hidden rounded-xl border border-white/10 bg-white/5 backdrop-blur-xl p-8"
+      >
+        <div className="absolute inset-0 bg-gradient-to-br from-purple-500/10 via-transparent to-pink-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+        
+        <div className="relative z-10">
+          {analysisComplete ? (
+            /* Analysis Complete State */
+            <div className="text-center py-8">
+              <motion.div
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                transition={{ type: "spring", duration: 0.5 }}
+              >
+                <CheckCircle className="h-20 w-20 text-emerald-400 mx-auto mb-4" />
+              </motion.div>
+              <h2 className="text-2xl font-bold text-white mb-2">Analysis Complete!</h2>
+              <p className="text-gray-300 mb-6">
+                Your resume has been analyzed and enhanced by Claude AI
+              </p>
+              
+              {/* Quick Stats */}
+              {analysisResults && (
+                <div className="grid grid-cols-3 gap-4 max-w-md mx-auto mb-6">
+                  <div className="bg-white/5 rounded-lg p-3">
+                    <div className="text-2xl font-bold text-cyan-400">
+                      {analysisResults.overallScore || 75}
+                    </div>
+                    <div className="text-xs text-gray-400">Overall Score</div>
+                  </div>
+                  <div className="bg-white/5 rounded-lg p-3">
+                    <div className="text-2xl font-bold text-purple-400">
+                      {analysisResults.atsCompatibility || 80}
+                    </div>
+                    <div className="text-xs text-gray-400">ATS Score</div>
+                  </div>
+                  <div className="bg-white/5 rounded-lg p-3">
+                    <div className="text-2xl font-bold text-emerald-400">
+                      {analysisResults.contentQuality || 70}
+                    </div>
+                    <div className="text-xs text-gray-400">Content</div>
+                  </div>
+                </div>
+              )}
+              
+              <p className="text-gray-400 text-sm">Redirecting to resume builder...</p>
+            </div>
+          ) : isAnalyzing ? (
+            /* Analyzing State */
+            <div className="text-center py-12">
+              <Brain className="h-20 w-20 text-purple-400 mx-auto mb-4 animate-pulse" />
+              <h2 className="text-2xl font-bold text-white mb-2">Claude AI is Analyzing</h2>
+              <p className="text-gray-300 mb-6">
+                Evaluating content quality, ATS compatibility, and generating improvements...
+              </p>
+              
+              <div className="w-full max-w-md mx-auto">
+                <div className="bg-gray-700 rounded-full h-3 overflow-hidden">
+                  <motion.div 
+                    className="bg-gradient-to-r from-purple-500 to-pink-500 h-full"
+                    initial={{ width: 0 }}
+                    animate={{ width: `${progress}%` }}
+                    transition={{ duration: 0.3 }}
+                  />
+                </div>
+                <p className="text-gray-400 mt-2 text-sm">{Math.round(progress)}% complete</p>
+              </div>
+            </div>
+          ) : (
+            /* Ready to Analyze State */
+            <div className="text-center py-8">
+              <Sparkles className="h-20 w-20 text-purple-400 mx-auto mb-4" />
+              <h2 className="text-2xl font-bold text-white mb-2">Ready for AI Analysis</h2>
+              <p className="text-gray-300 mb-6 max-w-lg mx-auto">
+                Claude AI will analyze your resume and provide personalized improvements, 
+                score your content, and optimize for ATS systems.
+              </p>
+              
+              {/* Extracted Data Preview */}
+              {extractedData && (
+                <div className="mb-8 p-6 bg-white/5 rounded-xl max-w-md mx-auto text-left">
+                  <h3 className="text-white font-medium mb-3 flex items-center gap-2">
+                    <FileText className="h-4 w-4 text-cyan-400" />
+                    Extracted Resume
+                  </h3>
+                  <div className="space-y-2 text-sm">
+                    {extractedData.name && (
+                      <p className="text-gray-300">
+                        <span className="text-gray-500">Name:</span> {extractedData.name}
+                      </p>
+                    )}
+                    {extractedData.email && (
+                      <p className="text-gray-300">
+                        <span className="text-gray-500">Email:</span> {extractedData.email}
+                      </p>
+                    )}
+                    {extractedData.experience?.length > 0 && (
+                      <p className="text-gray-300">
+                        <span className="text-gray-500">Experience:</span> {extractedData.experience.length} position(s)
+                      </p>
+                    )}
+                    {extractedData.education?.length > 0 && (
+                      <p className="text-gray-300">
+                        <span className="text-gray-500">Education:</span> {extractedData.education.length} item(s)
+                      </p>
+                    )}
+                    {(extractedData.skills?.technical?.length > 0 || extractedData.skills?.soft?.length > 0) && (
+                      <p className="text-gray-300">
+                        <span className="text-gray-500">Skills:</span>{' '}
+                        {(extractedData.skills?.technical?.length || 0) + (extractedData.skills?.soft?.length || 0)} skill(s)
+                      </p>
+                    )}
+                  </div>
+                </div>
+              )}
+              
+              <div className="flex gap-4 justify-center">
+                <Button
+                  onClick={handleSkipAnalysis}
+                  variant="outline"
+                  className="border-gray-600 text-gray-300 hover:bg-gray-800"
+                >
+                  <SkipForward className="h-4 w-4 mr-2" />
+                  Skip Analysis
+                </Button>
+                <Button
+                  onClick={handleStartAnalysis}
+                  className="bg-gradient-to-r from-purple-500 to-pink-600 hover:from-purple-600 hover:to-pink-700 text-white px-8"
+                >
+                  <Sparkles className="h-4 w-4 mr-2" />
+                  Start AI Analysis
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {/* Error Message */}
+          {error && (
+            <motion.div 
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="mt-6 p-4 bg-red-500/10 border border-red-500/30 rounded-lg flex items-center gap-3"
+            >
+              <AlertCircle className="h-5 w-5 text-red-400 flex-shrink-0" />
+              <p className="text-red-300">{error}</p>
+            </motion.div>
+          )}
+        </div>
+      </motion.div>
+
+      {/* What AI Analysis Does */}
+      <motion.div 
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.1 }}
+        className="grid md:grid-cols-3 gap-4"
+      >
+        <div className="relative group overflow-hidden rounded-xl border border-white/10 bg-white/5 backdrop-blur-xl p-5">
+          <div className="flex items-start gap-3">
+            <div className="w-10 h-10 rounded-lg bg-cyan-500/20 flex items-center justify-center flex-shrink-0">
+              <Target className="h-5 w-5 text-cyan-400" />
+            </div>
+            <div>
+              <h4 className="text-white font-medium mb-1">ATS Optimization</h4>
+              <p className="text-gray-400 text-sm">Ensures your resume passes applicant tracking systems</p>
+            </div>
+          </div>
+        </div>
+        
+        <div className="relative group overflow-hidden rounded-xl border border-white/10 bg-white/5 backdrop-blur-xl p-5">
+          <div className="flex items-start gap-3">
+            <div className="w-10 h-10 rounded-lg bg-purple-500/20 flex items-center justify-center flex-shrink-0">
+              <TrendingUp className="h-5 w-5 text-purple-400" />
+            </div>
+            <div>
+              <h4 className="text-white font-medium mb-1">Content Enhancement</h4>
+              <p className="text-gray-400 text-sm">Improves action verbs and quantifies achievements</p>
+            </div>
+          </div>
+        </div>
+        
+        <div className="relative group overflow-hidden rounded-xl border border-white/10 bg-white/5 backdrop-blur-xl p-5">
+          <div className="flex items-start gap-3">
+            <div className="w-10 h-10 rounded-lg bg-emerald-500/20 flex items-center justify-center flex-shrink-0">
+              <Award className="h-5 w-5 text-emerald-400" />
+            </div>
+            <div>
+              <h4 className="text-white font-medium mb-1">Skills Extraction</h4>
+              <p className="text-gray-400 text-sm">Identifies and categorizes your skills for matching</p>
+            </div>
+          </div>
+        </div>
+      </motion.div>
+    </div>
+  );
+}
+
