@@ -1646,8 +1646,8 @@ export default function ResumeBuilderPage() {
                         </motion.div>
                       )}
                     </div>
-                  </CardContent>
-                </Card>
+                  </div>
+                </div>
               </motion.div>
             )}
 
