@@ -329,6 +329,7 @@ model candidate_profiles {
   notice_period_days           Int?
   preferred_shift              Shift?
   preferred_work_setup         WorkSetup?
+  current_mood                 String?
   privacy_settings             Json      @default("{}")
   gamification                 Json      @default("{}")
   profile_completed            Boolean   @default(false)

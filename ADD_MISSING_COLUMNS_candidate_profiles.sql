@@ -1,12 +1,9 @@
--- SQL to add any missing columns to candidate_profiles table
--- Run this in Supabase SQL Editor if any columns are missing
+-- SQL to add current_mood column to candidate_profiles table
+-- Run this in Supabase SQL Editor
 
--- Check if current_mood column exists, if not add it
--- Note: currentMood from ProfileCompletionModal can be stored in gamification JSON
--- But if you want a dedicated column, uncomment below:
-
--- ALTER TABLE candidate_profiles 
--- ADD COLUMN IF NOT EXISTS current_mood TEXT;
+-- Add current_mood column if it doesn't exist
+ALTER TABLE candidate_profiles 
+ADD COLUMN IF NOT EXISTS current_mood TEXT;
 
 -- All other fields should already exist based on schema:
 -- ✅ gender_custom (String?)

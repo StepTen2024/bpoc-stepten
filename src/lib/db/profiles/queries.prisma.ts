@@ -31,6 +31,7 @@ export interface CandidateProfile {
   notice_period_days: number | null
   preferred_shift: string | null
   preferred_work_setup: string | null
+  current_mood: string | null
   privacy_settings: Record<string, any>
   gamification: Record<string, any>
   profile_completed: boolean

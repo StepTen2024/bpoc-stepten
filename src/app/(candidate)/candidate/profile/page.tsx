@@ -257,13 +257,8 @@ export default function CandidateProfilePage() {
         preferred_work_setup: formData.preferred_work_setup || null,
       }
       
-      // Store current_mood in gamification JSON
-      if (formData.current_mood) {
-        profileUpdate.gamification = {
-          ...(profile?.gamification || {}),
-          current_mood: formData.current_mood
-        }
-      }
+      // Store current_mood as dedicated column
+      profileUpdate.current_mood = formData.current_mood || null
       
       // Update candidate (username)
       if (Object.keys(candidateUpdate).length > 0) {
