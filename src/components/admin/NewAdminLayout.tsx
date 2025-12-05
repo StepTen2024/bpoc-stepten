@@ -1,16 +1,90 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useRouter, usePathname } from 'next/navigation';
 import { motion } from 'framer-motion';
 import AdminSidebar from './AdminSidebar';
-import { cn } from '@/lib/utils';
+import { supabase } from '@/lib/supabase';
+import { Loader2 } from 'lucide-react';
 
 interface NewAdminLayoutProps {
   children: React.ReactNode;
 }
 
 export default function NewAdminLayout({ children }: NewAdminLayoutProps) {
+  const router = useRouter();
+  const pathname = usePathname();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+
+  useEffect(() => {
+    // Skip auth check on login page
+    if (pathname === '/admin/login') {
+      setLoading(false);
+      setIsAuthenticated(true);
+      return;
+    }
+
+    const checkAuth = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        
+        if (!session) {
+          router.push('/admin/login');
+          return;
+        }
+
+        // Verify user is a BPOC admin
+        const { data: bpocUser, error } = await supabase
+          .from('bpoc_users')
+          .select('id, is_active, role')
+          .eq('id', session.user.id)
+          .single();
+
+        if (error || !bpocUser || !bpocUser.is_active) {
+          await supabase.auth.signOut();
+          router.push('/admin/login');
+          return;
+        }
+
+        setIsAuthenticated(true);
+      } catch (err) {
+        console.error('Auth check failed:', err);
+        router.push('/admin/login');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    checkAuth();
+
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'SIGNED_OUT') {
+        router.push('/admin/login');
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, [pathname, router]);
+
+  // Loading state
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-slate-950 flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="h-8 w-8 text-red-500 animate-spin mx-auto" />
+          <p className="text-gray-400 mt-4">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Not authenticated
+  if (!isAuthenticated) {
+    return null;
+  }
 
   return (
     <div className="min-h-screen bg-slate-950">
@@ -60,4 +134,3 @@ export default function NewAdminLayout({ children }: NewAdminLayoutProps) {
     </div>
   );
 }
-
