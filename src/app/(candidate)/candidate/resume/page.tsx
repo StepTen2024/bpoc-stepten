@@ -2781,7 +2781,7 @@ export default function ResumeBuilderPage() {
                     }).catch(() => {})
                     setIsDeletingSaved(false);
                     try { sessionStorage.setItem('resumeDeleted', '1'); } catch {}
-                    router.push('/resume-builder');
+                    router.push('/candidate/dashboard');
                   } catch (e: any) {
                     alert(e?.message || 'Failed to delete saved resume');
                   }
