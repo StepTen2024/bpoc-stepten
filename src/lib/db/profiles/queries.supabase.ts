@@ -187,6 +187,7 @@ export async function createProfile(
       notice_period_days: profile.notice_period_days,
       preferred_shift: profile.preferred_shift,
       preferred_work_setup: profile.preferred_work_setup,
+      current_mood: profile.current_mood,
       privacy_settings: profile.privacy_settings as Record<string, any>,
       gamification: profile.gamification as Record<string, any>,
       profile_completed: profile.profile_completed,
