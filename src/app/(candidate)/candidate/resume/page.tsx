@@ -828,7 +828,7 @@ export default function ResumeBuilderPage() {
       }
     }, [value, isFocused]);
 
-    return (
+  return (
       <Tag
         ref={ref as any}
         contentEditable
@@ -871,17 +871,17 @@ export default function ResumeBuilderPage() {
 
       console.log('💾 Saving generated resume to database...');
       
-      const saveResponse = await fetch('/api/save-generated-resume', {
+      // Save generated resume data to Supabase candidate_resumes.generated_data
+      const saveResponse = await fetch('/api/candidates/resume/save-generated', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${sessionToken}`
         },
         body: JSON.stringify({
-          generatedResumeData,
-          originalResumeId: null, // We'll link this later if needed
-          templateUsed: selectedTemplate.id,
-          generationMetadata: {
+          generated_data: generatedResumeData,
+          template_used: selectedTemplate.id,
+          generation_metadata: {
             originalResumeData: originalResumeData,
             generationTimestamp: new Date().toISOString(),
             templateUsed: selectedTemplate.id,
@@ -895,11 +895,11 @@ export default function ResumeBuilderPage() {
       try { saveJson = JSON.parse(saveText); } catch {}
 
       if (saveResponse.ok) {
-        console.log('✅ Generated resume saved to database:', saveJson?.generatedResumeId ?? '(no id)');
+        console.log('✅ Generated resume saved to Supabase:', saveJson?.resume?.id ?? '(no id)');
         // Clean up localStorage after successful database save
         cleanupLocalStorageAfterSave();
       } else {
-        console.warn('⚠️ Failed to save generated resume to database:', (saveJson && saveJson.error) || saveText || saveResponse.statusText);
+        console.warn('⚠️ Failed to save generated resume to Supabase:', (saveJson && saveJson.error) || saveText || saveResponse.statusText);
       }
     } catch (error) {
       console.error('❌ Error saving generated resume to database:', error);
@@ -1330,17 +1330,20 @@ export default function ResumeBuilderPage() {
         });
       }
       
-      const saveResponse = await fetch('/api/save-resume-to-profile', {
+      // Save to Supabase candidate_resumes table
+      const saveResponse = await fetch('/api/candidates/resume/save', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${sessionToken}`
         },
         body: JSON.stringify({
-          resumeData: completeResumeData,
-          templateUsed: selectedTemplate.id,
-          resumeTitle: resumeTitle,
-          resumeSlug: resumeSlug // Add the new slug
+          resume_data: completeResumeData,
+          template_used: selectedTemplate.id,
+          title: resumeTitle,
+          slug: resumeSlug,
+          is_primary: true,
+          is_public: false
         }),
       });
 
@@ -1349,14 +1352,19 @@ export default function ResumeBuilderPage() {
       try { saveJson = JSON.parse(saveText); } catch {}
 
       if (saveResponse.ok) {
-        console.log('✅ Resume saved to profile:', saveJson?.resumeUrl ?? '(no url)');
-        // Set the saved resume URL and show success modal
-        setSavedResumeUrl(saveJson?.resumeUrl ?? '');
+        console.log('✅ Resume saved to Supabase:', saveJson?.resume?.id ?? '(no id)');
+        // Generate resume URL from slug
+        const resumeUrl = saveJson?.resume?.slug 
+          ? `/resume/${saveJson.resume.slug}` 
+          : saveJson?.resumeUrl ?? '';
+        setSavedResumeUrl(resumeUrl);
         setShowSaveSuccessModal(true);
+        // Clean up localStorage after successful save
+        cleanupLocalStorageAfterSave();
       } else {
         const message = (saveJson && saveJson.error) || saveText || saveResponse.statusText;
-        console.error('❌ Failed to save resume to profile:', message);
-        alert(`Failed to save resume to profile: ${message}`);
+        console.error('❌ Failed to save resume:', message);
+        alert(`Failed to save resume: ${message}`);
       }
     } catch (error) {
       console.error('❌ Error saving resume to profile:', error);
@@ -2276,7 +2284,7 @@ export default function ResumeBuilderPage() {
                       onClick={() => handleTemplateChange(template)}
                     >
                           <CardContent className="p-2">
-                        <div className="text-center">
+      <div className="text-center">
                               <div className="text-lg mb-1">
                             {template.id === 'executive' && '💼'}
                             {template.id === 'tech-innovator' && '⚡'}
@@ -2286,9 +2294,9 @@ export default function ResumeBuilderPage() {
                             {template.id === 'startup-energy' && '🚀'}
                             {template.id === 'academic-scholar' && '📚'}
                             {template.id === 'freelance-charm' && '✨'}
-                          </div>
+      </div>
                               <h4 className="font-medium text-white text-xs">{template.name}</h4>
-                        </div>
+    </div>
                       </CardContent>
                     </Card>
                   </motion.div>
