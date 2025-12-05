@@ -186,6 +186,13 @@ export default function ResumeBuilderPage() {
   const [error, setError] = useState<string | null>(null);
   const [progressValue, setProgressValue] = useState(0);
   const [showSaveSuccessModal, setShowSaveSuccessModal] = useState(false);
+  
+  // Upload UI states for when no resume exists
+  const [showUploadUI, setShowUploadUI] = useState(false);
+  const [uploadedFile, setUploadedFile] = useState<File | null>(null);
+  const [isProcessingUpload, setIsProcessingUpload] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
   const [savedResumeUrl, setSavedResumeUrl] = useState<string>('');
   const [hasSavedResume, setHasSavedResume] = useState(false);
   const [isDeletingSaved, setIsDeletingSaved] = useState(false);
@@ -2181,6 +2188,116 @@ export default function ResumeBuilderPage() {
     );
   }
 
+  // Handle file upload
+  const handleFileUpload = async (file: File) => {
+    if (!file) return;
+    
+    // Validate file type
+    const validTypes = ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
+    if (!validTypes.includes(file.type)) {
+      toast.error('Please upload a PDF or Word document');
+      return;
+    }
+    
+    // Validate file size (10MB max)
+    if (file.size > 10 * 1024 * 1024) {
+      toast.error('File size must be less than 10MB');
+      return;
+    }
+    
+    setUploadedFile(file);
+    setIsProcessingUpload(true);
+    setUploadProgress(0);
+    
+    try {
+      // Simulate progress for UX
+      const progressInterval = setInterval(() => {
+        setUploadProgress(prev => Math.min(prev + 10, 90));
+      }, 500);
+      
+      // Get session token
+      const sessionToken = await getSessionToken();
+      if (!sessionToken) {
+        toast.error('Please log in to upload your resume');
+        setIsProcessingUpload(false);
+        return;
+      }
+      
+      // Convert file to base64
+      const reader = new FileReader();
+      reader.onload = async (e) => {
+        const base64 = e.target?.result as string;
+        
+        // Call the resume processing API
+        const response = await fetch('/api/candidates/resume/process', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${sessionToken}`,
+            'x-user-id': String(user?.id)
+          },
+          body: JSON.stringify({
+            file: {
+              name: file.name,
+              type: file.type,
+              size: file.size,
+              data: base64
+            }
+          })
+        });
+        
+        clearInterval(progressInterval);
+        setUploadProgress(100);
+        
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}));
+          throw new Error(errorData.error || 'Failed to process resume');
+        }
+        
+        const result = await response.json();
+        
+        // Set the resume data and clear error
+        if (result.resumeData) {
+          setOriginalResumeData(result.resumeData);
+          setImprovedResume(result.improvedResume || result.resumeData);
+          setError(null);
+          toast.success('Resume uploaded and processed successfully!');
+        }
+        
+        setIsProcessingUpload(false);
+      };
+      
+      reader.onerror = () => {
+        clearInterval(progressInterval);
+        toast.error('Failed to read file');
+        setIsProcessingUpload(false);
+      };
+      
+      reader.readAsDataURL(file);
+      
+    } catch (err) {
+      console.error('Upload error:', err);
+      toast.error(err instanceof Error ? err.message : 'Failed to upload resume');
+      setIsProcessingUpload(false);
+    }
+  };
+
+  // Handle drag and drop
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    const files = e.dataTransfer.files;
+    if (files && files.length > 0) {
+      handleFileUpload(files[0]);
+    }
+  };
+
   if (error) {
     return (
       <div className="space-y-8">
@@ -2192,30 +2309,72 @@ export default function ResumeBuilderPage() {
           </p>
         </div>
 
-        {/* Error Card */}
-        <div className="bg-red-500/20 border border-red-500/30 rounded-lg p-8">
-      <div className="text-center">
-            <AlertTriangle className="h-16 w-16 text-red-400 mx-auto mb-4" />
-            <h2 className="text-2xl font-bold text-white mb-4">No Resume Data Found</h2>
-            <p className="text-gray-300 mb-6">{error}</p>
-            <div className="flex gap-4 justify-center">
+        {/* Upload Interface - Self-contained within dashboard */}
+        <div className="relative group overflow-hidden rounded-xl border border-white/10 bg-white/5 backdrop-blur-xl p-8">
+          <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/10 via-transparent to-purple-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+          
+          <div className="relative z-10">
+            {isProcessingUpload ? (
+              <div className="text-center py-12">
+                <Loader2 className="h-16 w-16 text-cyan-400 mx-auto mb-4 animate-spin" />
+                <h2 className="text-2xl font-bold text-white mb-2">Processing Your Resume</h2>
+                <p className="text-gray-300 mb-4">Extracting and analyzing your resume data...</p>
+                <div className="w-full max-w-md mx-auto bg-gray-700 rounded-full h-2">
+                  <div 
+                    className="bg-gradient-to-r from-cyan-500 to-purple-500 h-2 rounded-full transition-all duration-300"
+                    style={{ width: `${uploadProgress}%` }}
+                  />
+                </div>
+                <p className="text-gray-400 mt-2 text-sm">{uploadProgress}% complete</p>
+              </div>
+            ) : (
+              <div 
+                className="text-center py-12 border-2 border-dashed border-white/20 rounded-lg hover:border-cyan-400/50 transition-colors cursor-pointer"
+                onDragOver={handleDragOver}
+                onDrop={handleDrop}
+                onClick={() => fileInputRef.current?.click()}
+              >
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept=".pdf,.doc,.docx"
+                  className="hidden"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) handleFileUpload(file);
+                  }}
+                />
+                
+                <Upload className="h-16 w-16 text-cyan-400 mx-auto mb-4" />
+                <h2 className="text-2xl font-bold text-white mb-2">Upload Your Resume</h2>
+                <p className="text-gray-300 mb-4">
+                  Drag and drop your resume here, or click to browse
+                </p>
+                <p className="text-gray-500 text-sm mb-6">
+                  Supported formats: PDF, DOC, DOCX (Max 10MB)
+                </p>
+                
+                <Button
+                  className="bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700"
+                >
+                  <Upload className="h-4 w-4 mr-2" />
+                  Select File
+                </Button>
+              </div>
+            )}
+            
+            {/* Back to Dashboard link */}
+            <div className="mt-6 text-center">
               <Button
                 onClick={() => router.push('/candidate/dashboard')}
-                variant="outline"
-                className="border-gray-600 text-gray-300 hover:bg-gray-800"
+                variant="ghost"
+                className="text-gray-400 hover:text-white"
               >
                 <ArrowLeft className="h-4 w-4 mr-2" />
                 Back to Dashboard
               </Button>
-              <Button
-                onClick={() => router.push('/resume-builder')}
-                className="bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700"
-              >
-                <Upload className="h-4 w-4 mr-2" />
-                Upload Resume
-              </Button>
-      </div>
-    </div>
+            </div>
+          </div>
         </div>
       </div>
     );
