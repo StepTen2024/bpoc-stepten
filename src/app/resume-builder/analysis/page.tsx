@@ -661,6 +661,56 @@ export default function AnalysisPage() {
         throw new Error(analysisData.error || 'Analysis failed');
       }
 
+      // Save to Supabase candidate_ai_analysis and sync structured tables
+      try {
+        const saveAnalysisResponse = await fetch('/api/candidates/ai-analysis/save', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            ...(token ? { Authorization: `Bearer ${token}` } : {})
+          },
+          body: JSON.stringify({
+            session_id: sessionId,
+            resume_id: null, // Will be linked when resume is saved
+            overall_score: analysisData.analysis?.overallScore || 0,
+            ats_compatibility_score: analysisData.analysis?.atsCompatibilityScore,
+            content_quality_score: analysisData.analysis?.contentQualityScore,
+            professional_presentation_score: analysisData.analysis?.professionalPresentationScore,
+            skills_alignment_score: analysisData.analysis?.skillsAlignmentScore,
+            key_strengths: analysisData.analysis?.keyStrengths || [],
+            strengths_analysis: analysisData.analysis?.strengthsAnalysis || {},
+            improvements: analysisData.analysis?.improvements || [],
+            recommendations: analysisData.analysis?.recommendations || [],
+            section_analysis: analysisData.analysis?.sectionAnalysis || {},
+            improved_summary: analysisData.analysis?.improvedSummary,
+            salary_analysis: analysisData.analysis?.salaryAnalysis,
+            career_path: analysisData.analysis?.careerPath,
+            candidate_profile_snapshot: analysisData.analysis?.candidateProfile,
+            skills_snapshot: analysisData.analysis?.skillsSnapshot || analysisData.analysis?.aggregatedData?.skills,
+            experience_snapshot: analysisData.analysis?.experienceSnapshot || analysisData.analysis?.aggregatedData?.experience,
+            education_snapshot: analysisData.analysis?.educationSnapshot || analysisData.analysis?.aggregatedData?.education,
+            analysis_metadata: {
+              session_id: sessionId,
+              analyzed_at: new Date().toISOString(),
+            },
+            portfolio_links: portfolioData || null,
+            files_analyzed: combinedResumeData.files?.map((f: any) => ({
+              name: f.fileName,
+              type: f.fileType,
+            })) || null,
+          })
+        });
+
+        if (saveAnalysisResponse.ok) {
+          console.log('✅ AI analysis saved to Supabase and structured tables synced');
+        } else {
+          console.warn('⚠️ Failed to save AI analysis to Supabase (non-critical)');
+        }
+      } catch (saveError) {
+        console.warn('⚠️ Error saving AI analysis to Supabase (non-critical):', saveError);
+        // Don't fail the analysis if Supabase save fails
+      }
+
       // Set analysis results and complete
       setProgressValue(100);
       setAnalysisResults(analysisData.analysis);

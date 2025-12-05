@@ -395,6 +395,18 @@ export default function ResumeBuilderPage() {
         const resumeData = localStorage.getItem('resumeData');
         const isEditingExisting = localStorage.getItem('editingExistingResume') === 'true';
         
+        // Check if user has any resume data (from upload/analysis flow)
+        const hasLocalResumeData = resumeData || 
+          localStorage.getItem('bpoc_processed_resumes') ||
+          localStorage.getItem('bpoc_uploaded_files');
+        
+        if (!hasLocalResumeData) {
+          // No resume data at all - show upload prompt
+          setIsLoading(false);
+          setError('No resume data found. Please upload a resume first.');
+          return;
+        }
+        
         if (resumeData) {
           try {
             const parsedData = JSON.parse(resumeData);
