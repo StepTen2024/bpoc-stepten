@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useToast } from '@/hooks/use-toast'
 // DISABLED: Google Places API not being used
 // import PlacesAutocomplete from '@/components/shared/ui/places-autocomplete'
-import { User, MapPin, Phone, Briefcase, FileText, Loader2, CheckCircle, X, Info, Sparkles } from 'lucide-react'
+import { User, MapPin, Phone, Briefcase, FileText, Loader2, CheckCircle, X, Info, Sparkles, Camera, Image as ImageIcon } from 'lucide-react'
 import {
   Tooltip,
   TooltipContent,
@@ -18,6 +18,7 @@ import {
   TooltipTrigger
 } from '@/components/shared/ui/tooltip'
 import { cn, slugify } from '@/lib/utils'
+import { uploadProfilePhoto, optimizeImage } from '@/lib/storage'
 
 const WORK_STATUS_OPTIONS = [
   { value: 'employed', label: 'Employed', icon: '💼' },
@@ -59,6 +60,9 @@ export default function CandidateProfilePage() {
   const [age, setAge] = useState<number | null>(null)
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [touched, setTouched] = useState<Record<string, boolean>>({})
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null)
+  const [photoUploading, setPhotoUploading] = useState(false)
+  const [photoError, setPhotoError] = useState<string | null>(null)
   
   const [formData, setFormData] = useState({
     username: '',
@@ -92,8 +96,25 @@ export default function CandidateProfilePage() {
   useEffect(() => {
     if (user) {
       fetchProfile()
+      fetchCandidateData()
     }
   }, [user])
+
+  // Fetch candidate data to get avatar_url
+  async function fetchCandidateData() {
+    if (!user?.id) return
+    try {
+      const response = await fetch(`/api/candidates/${user.id}`)
+      if (response.ok) {
+        const data = await response.json()
+        if (data.candidate?.avatar_url) {
+          setAvatarUrl(data.candidate.avatar_url)
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching candidate data:', error)
+    }
+  }
 
   // Calculate age when birthday changes
   useEffect(() => {
@@ -388,6 +409,80 @@ export default function CandidateProfilePage() {
     }
   }
 
+  // Handle profile photo upload
+  const handlePhotoUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (!file || !user?.id) return
+
+    try {
+      setPhotoUploading(true)
+      setPhotoError(null)
+
+      // Validate file type
+      if (!file.type.startsWith('image/')) {
+        throw new Error('Please select an image file (JPG, PNG, etc.)')
+      }
+
+      // Validate file size (5MB limit)
+      if (file.size > 5 * 1024 * 1024) {
+        throw new Error('File size must be less than 5MB')
+      }
+
+      console.log('📸 Starting photo upload...')
+
+      // Optimize image
+      const optimizedFile = await optimizeImage(file)
+      console.log('✅ Image optimized')
+
+      // Upload to Supabase Storage
+      const { fileName, publicUrl } = await uploadProfilePhoto(optimizedFile, user.id)
+      console.log('✅ Photo uploaded to Supabase:', publicUrl)
+
+      // Update candidates table with avatar_url
+      const response = await fetch(`/api/candidates/${user.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          avatar_url: publicUrl
+        })
+      })
+
+      if (!response.ok) {
+        const errorText = await response.text()
+        console.error('❌ Failed to update avatar_url:', response.status, errorText)
+        throw new Error('Failed to update profile photo')
+      }
+
+      // Update local state
+      setAvatarUrl(publicUrl)
+      console.log('✅ Profile photo updated successfully')
+
+      toast({
+        title: 'Photo uploaded',
+        description: 'Your profile photo has been updated successfully.',
+      })
+
+      // Trigger header update if needed
+      window.dispatchEvent(new CustomEvent('profileUpdated'))
+
+    } catch (error) {
+      console.error('❌ Photo upload failed:', error)
+      const errorMessage = error instanceof Error ? error.message : 'Failed to upload photo'
+      setPhotoError(errorMessage)
+      toast({
+        title: 'Upload failed',
+        description: errorMessage,
+        variant: 'destructive',
+      })
+    } finally {
+      setPhotoUploading(false)
+      // Reset file input
+      if (event.target) {
+        event.target.value = ''
+      }
+    }
+  }
+
   const isFieldDisabled = (field: string) => {
     switch (formData.work_status) {
       case 'unemployed':
@@ -637,6 +732,76 @@ export default function CandidateProfilePage() {
               <div>
                 <h2 className="text-xl font-semibold text-white">Step 1: Profile Information</h2>
                 <p className="text-sm text-gray-400">Your personal details and contact information</p>
+              </div>
+            </div>
+
+            {/* Profile Photo Upload */}
+            <div className="mb-6 pb-6 border-b border-white/10">
+              <Label className={cn(labelClass, "mb-3 block")}>
+                Profile Photo
+              </Label>
+              <div className="flex items-center gap-6">
+                {/* Photo Preview */}
+                <div className="relative">
+                  <div className="w-24 h-24 rounded-full overflow-hidden border-2 border-cyan-500/50 bg-white/5 flex items-center justify-center">
+                    {photoUploading ? (
+                      <Loader2 className="w-8 h-8 text-cyan-400 animate-spin" />
+                    ) : avatarUrl ? (
+                      <img 
+                        src={avatarUrl} 
+                        alt="Profile" 
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <User className="w-10 h-10 text-gray-500" />
+                    )}
+                  </div>
+                  {avatarUrl && !photoUploading && (
+                    <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-green-500 rounded-full border-2 border-[#0B0B0D] flex items-center justify-center">
+                      <CheckCircle className="w-4 h-4 text-white" />
+                    </div>
+                  )}
+                </div>
+
+                {/* Upload Button */}
+                <div className="flex-1">
+                  <label htmlFor="photo-upload" className="cursor-pointer">
+                    <input
+                      id="photo-upload"
+                      type="file"
+                      accept="image/*"
+                      onChange={handlePhotoUpload}
+                      className="hidden"
+                      disabled={photoUploading}
+                    />
+                    <div className={cn(
+                      "inline-flex items-center gap-2 px-4 py-2 rounded-lg border transition-all",
+                      photoUploading 
+                        ? "border-gray-500/50 bg-white/5 cursor-not-allowed opacity-50"
+                        : "border-cyan-500/50 bg-cyan-500/10 hover:bg-cyan-500/20 cursor-pointer hover:border-cyan-500/70"
+                    )}>
+                      {photoUploading ? (
+                        <>
+                          <Loader2 className="w-4 h-4 text-cyan-400 animate-spin" />
+                          <span className="text-sm text-gray-400">Uploading...</span>
+                        </>
+                      ) : (
+                        <>
+                          <Camera className="w-4 h-4 text-cyan-400" />
+                          <span className="text-sm text-white">
+                            {avatarUrl ? 'Change Photo' : 'Upload Photo'}
+                          </span>
+                        </>
+                      )}
+                    </div>
+                  </label>
+                  {photoError && (
+                    <p className="text-xs text-red-400 mt-2">{photoError}</p>
+                  )}
+                  <p className="text-xs text-gray-500 mt-2">
+                    JPG, PNG or GIF. Max size 5MB. Recommended: 400x400px
+                  </p>
+                </div>
               </div>
             </div>
 
