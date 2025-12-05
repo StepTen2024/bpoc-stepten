@@ -35,14 +35,20 @@ export default function NewAdminLayout({ children }: NewAdminLayoutProps) {
           return;
         }
 
-        // Verify user is a BPOC admin
-        const { data: bpocUser, error } = await supabase
-          .from('bpoc_users')
-          .select('id, is_active, role')
-          .eq('id', session.user.id)
-          .single();
+        // Verify user is a BPOC admin via API (bypasses RLS)
+        const response = await fetch('/api/admin/verify', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            access_token: session.access_token,
+          }),
+        });
 
-        if (error || !bpocUser || !bpocUser.is_active) {
+        const result = await response.json();
+
+        if (!response.ok || !result.isAdmin) {
           await supabase.auth.signOut();
           router.push('/admin/login');
           return;
