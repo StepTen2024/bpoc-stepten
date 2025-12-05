@@ -57,6 +57,8 @@ export default function CandidateProfilePage() {
   const [usernameAvailable, setUsernameAvailable] = useState<boolean | null>(null)
   const [usernameTimeout, setUsernameTimeout] = useState<NodeJS.Timeout | null>(null)
   const [age, setAge] = useState<number | null>(null)
+  const [errors, setErrors] = useState<Record<string, string>>({})
+  const [touched, setTouched] = useState<Record<string, boolean>>({})
   
   const [formData, setFormData] = useState({
     username: '',
@@ -110,6 +112,103 @@ export default function CandidateProfilePage() {
       setAge(null)
     }
   }, [formData.birthday])
+
+  // Calculate form completion percentage
+  const calculateCompletion = () => {
+    const requiredFields = [
+      'username', 'gender', 'location', 'phone', 'birthday', 'bio',
+      'work_status', 'expected_salary_min', 'expected_salary_max',
+      'preferred_shift', 'preferred_work_setup'
+    ]
+    
+    const filledFields = requiredFields.filter(field => {
+      const value = formData[field as keyof typeof formData]
+      if (field === 'expected_salary_min' || field === 'expected_salary_max') {
+        return value && value.toString().trim() !== ''
+      }
+      return value && value.toString().trim() !== ''
+    }).length
+
+    return Math.round((filledFields / requiredFields.length) * 100)
+  }
+
+  // Validate form fields
+  const validateField = (field: string, value: any): string => {
+    switch (field) {
+      case 'username':
+        if (!value || value.trim().length < 3) return 'Username must be at least 3 characters'
+        if (value.length > 20) return 'Username must be 20 characters or less'
+        if (!/^[a-z0-9_]+$/.test(value.toLowerCase())) return 'Username can only contain letters, numbers, and underscores'
+        if (usernameAvailable === false) return 'This username is already taken'
+        return ''
+      case 'phone':
+        if (!value || value.trim() === '') return 'Phone number is required'
+        if (!/^\+?\d{10,15}$/.test(value.replace(/\s/g, ''))) return 'Please enter a valid phone number with country code'
+        return ''
+      case 'bio':
+        if (!value || value.trim().length < 10) return 'Bio must be at least 10 characters'
+        if (value.length > 500) return 'Bio must be 500 characters or less'
+        return ''
+      case 'location':
+        if (!value || value.trim() === '') return 'Location is required'
+        return ''
+      case 'birthday':
+        if (!value) return 'Birthday is required'
+        const birthDate = new Date(value)
+        const today = new Date()
+        if (birthDate > today) return 'Birthday cannot be in the future'
+        if (today.getFullYear() - birthDate.getFullYear() < 13) return 'You must be at least 13 years old'
+        return ''
+      case 'gender':
+        if (!value) return 'Gender is required'
+        if (value === 'others' && !formData.gender_custom?.trim()) return 'Please specify your gender'
+        return ''
+      case 'expected_salary_min':
+        if (!value || value.trim() === '') return 'Minimum expected salary is required'
+        const minSalary = parseFloat(value)
+        if (isNaN(minSalary) || minSalary < 0) return 'Please enter a valid number'
+        return ''
+      case 'expected_salary_max':
+        if (!value || value.trim() === '') return 'Maximum expected salary is required'
+        const maxSalary = parseFloat(value)
+        if (isNaN(maxSalary) || maxSalary < 0) return 'Please enter a valid number'
+        if (formData.expected_salary_min && parseFloat(formData.expected_salary_min) > maxSalary) {
+          return 'Maximum salary must be greater than minimum salary'
+        }
+        return ''
+      case 'work_status':
+        if (!value) return 'Work status is required'
+        return ''
+      case 'preferred_shift':
+        if (!value) return 'Preferred shift is required'
+        return ''
+      case 'preferred_work_setup':
+        if (!value) return 'Preferred work setup is required'
+        return ''
+      default:
+        return ''
+    }
+  }
+
+  // Validate entire form
+  const validateForm = (): boolean => {
+    const newErrors: Record<string, string> = {}
+    const fieldsToValidate = [
+      'username', 'gender', 'location', 'phone', 'birthday', 'bio',
+      'work_status', 'expected_salary_min', 'expected_salary_max',
+      'preferred_shift', 'preferred_work_setup'
+    ]
+
+    fieldsToValidate.forEach(field => {
+      const error = validateField(field, formData[field as keyof typeof formData])
+      if (error) {
+        newErrors[field] = error
+      }
+    })
+
+    setErrors(newErrors)
+    return Object.keys(newErrors).length === 0
+  }
 
   // Handle work status changes - disable/enable fields
   useEffect(() => {
@@ -240,6 +339,18 @@ export default function CandidateProfilePage() {
   const handleInputChange = (field: string, value: any) => {
     setFormData(prev => ({ ...prev, [field]: value }))
     
+    // Mark field as touched
+    setTouched(prev => ({ ...prev, [field]: true }))
+    
+    // Clear error when user starts typing
+    if (errors[field]) {
+      setErrors(prev => {
+        const newErrors = { ...prev }
+        delete newErrors[field]
+        return newErrors
+      })
+    }
+    
     if (field === 'username') {
       if (usernameTimeout) {
         clearTimeout(usernameTimeout)
@@ -252,6 +363,28 @@ export default function CandidateProfilePage() {
     
     if (field === 'gender' && value !== 'others') {
       setFormData(prev => ({ ...prev, gender_custom: '' }))
+    }
+
+    // Validate field in real-time
+    if (touched[field]) {
+      const error = validateField(field, value)
+      if (error) {
+        setErrors(prev => ({ ...prev, [field]: error }))
+      }
+    }
+  }
+
+  const handleBlur = (field: string) => {
+    setTouched(prev => ({ ...prev, [field]: true }))
+    const error = validateField(field, formData[field as keyof typeof formData])
+    if (error) {
+      setErrors(prev => ({ ...prev, [field]: error }))
+    } else {
+      setErrors(prev => {
+        const newErrors = { ...prev }
+        delete newErrors[field]
+        return newErrors
+      })
     }
   }
 
@@ -282,6 +415,27 @@ export default function CandidateProfilePage() {
   }
 
   async function handleSave() {
+    // Mark all fields as touched
+    const allFields = Object.keys(formData)
+    setTouched(prev => {
+      const newTouched = { ...prev }
+      allFields.forEach(field => {
+        newTouched[field] = true
+      })
+      return newTouched
+    })
+
+    // Validate form before saving
+    if (!validateForm()) {
+      toast({
+        title: 'Please fix errors',
+        description: 'Some fields have errors. Please check and correct them before saving.',
+        variant: 'destructive',
+      })
+      setSaving(false)
+      return
+    }
+
     try {
       setSaving(true)
       
@@ -405,44 +559,69 @@ export default function CandidateProfilePage() {
       <div className="space-y-8">
         {/* Header */}
         <div className="flex flex-col md:flex-row justify-between gap-4">
-          <div>
+          <div className="flex-1">
             <h1 className="text-3xl font-bold text-white">
               Complete Your Profile
             </h1>
             <p className="text-gray-400 mt-1">
               Fill in your details to unlock better job matches and opportunities
             </p>
+            
+            {/* Progress Indicator */}
+            <div className="mt-4">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm text-gray-400">Profile Completion</span>
+                <span className="text-sm font-semibold text-cyan-400">{calculateCompletion()}%</span>
+              </div>
+              <div className="w-full bg-white/10 rounded-full h-2 overflow-hidden">
+                <div 
+                  className="h-full bg-gradient-to-r from-cyan-500 to-blue-600 transition-all duration-500 ease-out"
+                  style={{ width: `${calculateCompletion()}%` }}
+                />
+              </div>
+            </div>
           </div>
-          <Button 
-            onClick={handleSave} 
-            disabled={saving} 
-            size="lg" 
-            className="bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white shadow-lg shadow-cyan-500/25 transition-all hover:scale-105"
-          >
-            {saving ? (
-              <>
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                Saving...
-              </>
-            ) : (
-              <>
-                <CheckCircle className="w-4 h-4 mr-2" />
-                Save Profile
-              </>
-            )}
-          </Button>
+          <div className="flex items-start">
+            <Button 
+              onClick={handleSave} 
+              disabled={saving || Object.keys(errors).length > 0} 
+              size="lg" 
+              className="bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white shadow-lg shadow-cyan-500/25 transition-all hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {saving ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Saving...
+                </>
+              ) : (
+                <>
+                  <CheckCircle className="w-4 h-4 mr-2" />
+                  Save Profile
+                </>
+              )}
+            </Button>
+          </div>
         </div>
 
         {/* Info Banner */}
         <div className="relative overflow-hidden rounded-xl border border-cyan-500/30 bg-gradient-to-r from-cyan-500/10 to-blue-500/10 p-4 backdrop-blur-sm">
           <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/5 via-transparent to-purple-500/5" />
-          <div className="relative flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-cyan-500/20">
-              <Sparkles className="w-5 h-5 text-cyan-400" />
+          <div className="relative flex flex-col gap-2">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-cyan-500/20">
+                <Sparkles className="w-5 h-5 text-cyan-400" />
+              </div>
+              <p className="text-sm text-gray-300">
+                <span className="font-semibold text-white">Complete your profile</span> to get personalized job recommendations and increase your visibility to recruiters.
+              </p>
             </div>
-            <p className="text-sm text-gray-300">
-              <span className="font-semibold text-white">Complete your profile</span> to get personalized job recommendations and increase your visibility to recruiters.
-            </p>
+            {Object.keys(errors).length > 0 && (
+              <div className="ml-12 mt-2">
+                <p className="text-xs text-red-400">
+                  ⚠️ Please fix {Object.keys(errors).length} error{Object.keys(errors).length > 1 ? 's' : ''} before saving
+                </p>
+              </div>
+            )}
           </div>
         </div>
 
@@ -464,23 +643,39 @@ export default function CandidateProfilePage() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* Username */}
                 <div>
-                <Label htmlFor="username" className={cn(labelClass, "mb-1.5 block")}>
-                  Username <span className="text-red-400">*</span>
-                </Label>
+                <div className="flex items-center gap-2 mb-1.5">
+                  <Label htmlFor="username" className={cn(labelClass)}>
+                    Username <span className="text-red-400">*</span>
+                  </Label>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Info className="h-3 w-3 text-gray-500 cursor-pointer hover:text-gray-300" />
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p className="text-xs">Choose a unique username (3-20 characters, letters, numbers, and underscores only)</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </div>
                 <div className="relative">
                   <User className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-500" />
                   <Input
                     id="username"
                     value={formData.username}
-                    onChange={(e) => handleInputChange('username', e.target.value)}
+                    onChange={(e) => handleInputChange('username', e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ''))}
+                    onBlur={() => handleBlur('username')}
                     placeholder="e.g., john_doe123"
-                    className={cn(inputClass, "pl-10")}
+                    className={cn(
+                      inputClass, 
+                      "pl-10",
+                      errors.username && "border-red-500/50 focus:border-red-500/50 focus:ring-red-500/20",
+                      usernameAvailable === true && !errors.username && "border-green-500/50"
+                    )}
                     maxLength={20}
                   />
                   {usernameChecking && (
                     <Loader2 className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400 animate-spin" />
                   )}
-                  {usernameAvailable === true && !usernameChecking && (
+                  {usernameAvailable === true && !usernameChecking && !errors.username && (
                     <CheckCircle className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-green-500" />
                   )}
                   {usernameAvailable === false && !usernameChecking && (
@@ -489,13 +684,16 @@ export default function CandidateProfilePage() {
                 </div>
                 <div className="flex items-center justify-between mt-1">
                   <span className="text-xs text-gray-500">{formData.username.length}/20 characters</span>
-                  {usernameAvailable === true && (
+                  {usernameAvailable === true && !errors.username && (
                     <span className="text-xs text-green-400">✓ Available</span>
                   )}
                   {usernameAvailable === false && (
                     <span className="text-xs text-red-400">✗ Taken</span>
                   )}
                 </div>
+                {errors.username && touched.username && (
+                  <p className="text-xs text-red-400 mt-1">{errors.username}</p>
+                )}
               </div>
 
               {/* Gender */}
@@ -503,8 +701,17 @@ export default function CandidateProfilePage() {
                 <Label htmlFor="gender" className={cn(labelClass, "mb-1.5 block")}>
                   Gender <span className="text-red-400">*</span>
                 </Label>
-                <Select value={formData.gender} onValueChange={(value) => handleInputChange('gender', value)}>
-                  <SelectTrigger className={inputClass}>
+                <Select 
+                  value={formData.gender} 
+                  onValueChange={(value) => {
+                    handleInputChange('gender', value)
+                    handleBlur('gender')
+                  }}
+                >
+                  <SelectTrigger className={cn(
+                    inputClass,
+                    errors.gender && touched.gender && "border-red-500/50 focus:border-red-500/50 focus:ring-red-500/20"
+                  )}>
                     <SelectValue placeholder="Select your gender" />
                   </SelectTrigger>
                   <SelectContent className="bg-[#1a1a1d] border-white/10 text-white">
@@ -515,29 +722,55 @@ export default function CandidateProfilePage() {
                 </Select>
                 {formData.gender === 'others' && (
                   <Input
-                    className={cn(inputClass, "mt-2")}
+                    className={cn(
+                      inputClass, 
+                      "mt-2",
+                      errors.gender && touched.gender && "border-red-500/50 focus:border-red-500/50 focus:ring-red-500/20"
+                    )}
                     placeholder="Please specify your gender"
                     value={formData.gender_custom}
                     onChange={(e) => handleInputChange('gender_custom', e.target.value)}
+                    onBlur={() => handleBlur('gender')}
                   />
+                )}
+                {errors.gender && touched.gender && (
+                  <p className="text-xs text-red-400 mt-1">{errors.gender}</p>
                 )}
               </div>
 
               {/* Location */}
               <div className="md:col-span-2">
-                <Label htmlFor="location" className={cn(labelClass, "mb-1.5 block")}>
-                  Location <span className="text-red-400">*</span>
-                </Label>
+                <div className="flex items-center gap-2 mb-1.5">
+                  <Label htmlFor="location" className={cn(labelClass)}>
+                    Location <span className="text-red-400">*</span>
+                  </Label>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Info className="h-3 w-3 text-gray-500 cursor-pointer hover:text-gray-300" />
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p className="text-xs">Enter your city, province, municipality, or barangay (e.g., Manila, Metro Manila)</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </div>
                 <div className="relative">
                   <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-500 z-10" />
                   <Input
                     id="location"
                     value={formData.location}
                     onChange={(e) => handleInputChange('location', e.target.value)}
-                    placeholder="Type city, province, municipality, or barangay"
-                    className={cn(inputClass, "pl-10")}
+                    onBlur={() => handleBlur('location')}
+                    placeholder="e.g., Manila, Metro Manila or Quezon City"
+                    className={cn(
+                      inputClass, 
+                      "pl-10",
+                      errors.location && touched.location && "border-red-500/50 focus:border-red-500/50 focus:ring-red-500/20"
+                    )}
                   />
                 </div>
+                {errors.location && touched.location && (
+                  <p className="text-xs text-red-400 mt-1">{errors.location}</p>
+                )}
               </div>
 
               {/* Phone */}
@@ -554,26 +787,47 @@ export default function CandidateProfilePage() {
                       <p className="text-xs">Enter a reachable mobile number with country code (e.g., +63 912 345 6789)</p>
                     </TooltipContent>
                   </Tooltip>
-              </div>
+                </div>
                 <div className="relative">
                   <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-500" />
-                <Input
-                  id="phone"
+                  <Input
+                    id="phone"
                     type="tel"
-                  value={formData.phone}
+                    value={formData.phone}
                     onChange={(e) => handleInputChange('phone', e.target.value)}
+                    onBlur={() => handleBlur('phone')}
                     placeholder="e.g., +63 912 345 6789"
-                    className={cn(inputClass, "pl-10")}
-                />
+                    className={cn(
+                      inputClass, 
+                      "pl-10",
+                      errors.phone && touched.phone && "border-red-500/50 focus:border-red-500/50 focus:ring-red-500/20"
+                    )}
+                  />
                 </div>
+                {errors.phone && touched.phone && (
+                  <p className="text-xs text-red-400 mt-1">{errors.phone}</p>
+                )}
               </div>
 
               {/* Birthday */}
               <div>
-                <Label htmlFor="birthday" className={cn(labelClass, "mb-1.5 block")}>
-                  Birthday <span className="text-red-400">*</span>
-                </Label>
-                <div className="grid grid-cols-3 gap-2">
+                <div className="flex items-center gap-2 mb-1.5">
+                  <Label htmlFor="birthday" className={cn(labelClass)}>
+                    Birthday <span className="text-red-400">*</span>
+                  </Label>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Info className="h-3 w-3 text-gray-500 cursor-pointer hover:text-gray-300" />
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p className="text-xs">Select your birth date using the dropdowns below</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </div>
+                <div className={cn(
+                  "grid grid-cols-3 gap-2 p-2 rounded-md border",
+                  errors.birthday && touched.birthday ? "border-red-500/50" : "border-transparent"
+                )}>
                   {/* Year */}
                   <Select 
                     value={formData.birthday ? new Date(formData.birthday).getFullYear().toString() : ''} 
@@ -586,6 +840,7 @@ export default function CandidateProfilePage() {
                       const validDay = Math.min(currentDay, maxDay)
                       const newDate = `${year}-${String(month).padStart(2, '0')}-${String(validDay).padStart(2, '0')}`
                       handleInputChange('birthday', newDate)
+                      handleBlur('birthday')
                     }}
                   >
                     <SelectTrigger className={inputClass}>
@@ -615,6 +870,7 @@ export default function CandidateProfilePage() {
                       const validDay = Math.min(currentDay, maxDay)
                       const newDate = `${year}-${String(month).padStart(2, '0')}-${String(validDay).padStart(2, '0')}`
                       handleInputChange('birthday', newDate)
+                      handleBlur('birthday')
                     }}
                   >
                     <SelectTrigger className={inputClass}>
@@ -645,6 +901,7 @@ export default function CandidateProfilePage() {
                       const validDay = Math.min(parseInt(day), maxDay)
                       const newDate = `${year}-${String(month).padStart(2, '0')}-${String(validDay).padStart(2, '0')}`
                       handleInputChange('birthday', newDate)
+                      handleBlur('birthday')
                     }}
                   >
                     <SelectTrigger className={inputClass}>
@@ -672,6 +929,9 @@ export default function CandidateProfilePage() {
                 {age !== null && (
                   <p className="text-xs text-cyan-400 mt-1">Age: {age} years old</p>
                 )}
+                {errors.birthday && touched.birthday && (
+                  <p className="text-xs text-red-400 mt-1">{errors.birthday}</p>
+                )}
               </div>
 
               {/* Position */}
@@ -693,27 +953,50 @@ export default function CandidateProfilePage() {
 
               {/* Bio */}
               <div className="md:col-span-2">
-                <Label htmlFor="bio" className={cn(labelClass, "mb-1.5 block")}>
-                  Bio <span className="text-red-400">*</span>
-                </Label>
+                <div className="flex items-center gap-2 mb-1.5">
+                  <Label htmlFor="bio" className={cn(labelClass)}>
+                    Bio <span className="text-red-400">*</span>
+                  </Label>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Info className="h-3 w-3 text-gray-500 cursor-pointer hover:text-gray-300" />
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p className="text-xs">Write a brief introduction about yourself, your experience, and career goals (10-500 characters)</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </div>
                 <div className="relative">
                   <FileText className="absolute left-3 top-3 w-4 h-4 text-gray-500" />
                   <Textarea
                     id="bio"
                     value={formData.bio}
                     onChange={(e) => handleInputChange('bio', e.target.value)}
+                    onBlur={() => handleBlur('bio')}
                     rows={4}
-                    placeholder="Tell us about yourself, your experience, and career goals..."
-                    className={cn(inputClass, "pl-10")}
+                    placeholder="Tell us about yourself, your experience, and career goals. This helps recruiters understand who you are..."
+                    className={cn(
+                      inputClass, 
+                      "pl-10",
+                      errors.bio && touched.bio && "border-red-500/50 focus:border-red-500/50 focus:ring-red-500/20"
+                    )}
                     maxLength={500}
                   />
                 </div>
                 <div className="flex items-center justify-between mt-1">
-                  <span className="text-xs text-gray-500">{formData.bio.length}/500 characters</span>
-                  {formData.bio.length < 10 && formData.bio.length > 0 && (
+                  <span className={cn(
+                    "text-xs",
+                    formData.bio.length < 10 ? "text-red-400" : formData.bio.length >= 500 ? "text-yellow-400" : "text-gray-500"
+                  )}>
+                    {formData.bio.length}/500 characters
+                  </span>
+                  {formData.bio.length > 0 && formData.bio.length < 10 && (
                     <span className="text-xs text-red-400">At least 10 characters required</span>
                   )}
                 </div>
+                {errors.bio && touched.bio && (
+                  <p className="text-xs text-red-400 mt-1">{errors.bio}</p>
+                )}
               </div>
             </div>
           </div>
@@ -740,8 +1023,17 @@ export default function CandidateProfilePage() {
                 <Label htmlFor="work_status" className={cn(labelClass, "mb-1.5 block")}>
                   Work Status <span className="text-red-400">*</span>
                 </Label>
-                <Select value={formData.work_status} onValueChange={(value) => handleInputChange('work_status', value)}>
-                  <SelectTrigger className={inputClass}>
+                <Select 
+                  value={formData.work_status} 
+                  onValueChange={(value) => {
+                    handleInputChange('work_status', value)
+                    handleBlur('work_status')
+                  }}
+                >
+                  <SelectTrigger className={cn(
+                    inputClass,
+                    errors.work_status && touched.work_status && "border-red-500/50 focus:border-red-500/50 focus:ring-red-500/20"
+                  )}>
                     <SelectValue placeholder="Select your work status" />
                   </SelectTrigger>
                   <SelectContent className="bg-[#1a1a1d] border-white/10 text-white">
@@ -752,6 +1044,9 @@ export default function CandidateProfilePage() {
                     ))}
                   </SelectContent>
                 </Select>
+                {errors.work_status && touched.work_status && (
+                  <p className="text-xs text-red-400 mt-1">{errors.work_status}</p>
+                )}
               </div>
 
               {/* Current Mood */}
@@ -840,26 +1135,44 @@ export default function CandidateProfilePage() {
                       <Info className="h-3 w-3 text-gray-500 cursor-pointer hover:text-gray-300" />
                     </TooltipTrigger>
                     <TooltipContent>
-                      <p className="text-xs">Enter full numbers (e.g., 60000, 80000) instead of abbreviated forms</p>
+                      <p className="text-xs">Enter full numbers in PHP (e.g., 60000, 80000) instead of abbreviated forms like 100k</p>
                     </TooltipContent>
                   </Tooltip>
                 </div>
                 <div className="flex items-center space-x-2">
-                  <Input
-                    type="text"
-                    placeholder="Min (e.g., 60000)"
-                    value={formData.expected_salary_min}
-                    onChange={(e) => handleInputChange('expected_salary_min', e.target.value)}
-                    className={inputClass}
-                  />
+                  <div className="flex-1">
+                    <Input
+                      type="text"
+                      placeholder="Min (e.g., 60000)"
+                      value={formData.expected_salary_min}
+                      onChange={(e) => handleInputChange('expected_salary_min', e.target.value.replace(/[^0-9]/g, ''))}
+                      onBlur={() => handleBlur('expected_salary_min')}
+                      className={cn(
+                        inputClass,
+                        errors.expected_salary_min && touched.expected_salary_min && "border-red-500/50 focus:border-red-500/50 focus:ring-red-500/20"
+                      )}
+                    />
+                    {errors.expected_salary_min && touched.expected_salary_min && (
+                      <p className="text-xs text-red-400 mt-1">{errors.expected_salary_min}</p>
+                    )}
+                  </div>
                   <span className="text-gray-500 font-medium">-</span>
-                  <Input
-                    type="text"
-                    placeholder="Max (e.g., 80000)"
-                    value={formData.expected_salary_max}
-                    onChange={(e) => handleInputChange('expected_salary_max', e.target.value)}
-                    className={inputClass}
-                  />
+                  <div className="flex-1">
+                    <Input
+                      type="text"
+                      placeholder="Max (e.g., 80000)"
+                      value={formData.expected_salary_max}
+                      onChange={(e) => handleInputChange('expected_salary_max', e.target.value.replace(/[^0-9]/g, ''))}
+                      onBlur={() => handleBlur('expected_salary_max')}
+                      className={cn(
+                        inputClass,
+                        errors.expected_salary_max && touched.expected_salary_max && "border-red-500/50 focus:border-red-500/50 focus:ring-red-500/20"
+                      )}
+                    />
+                    {errors.expected_salary_max && touched.expected_salary_max && (
+                      <p className="text-xs text-red-400 mt-1">{errors.expected_salary_max}</p>
+                    )}
+                  </div>
                 </div>
               </div>
 
@@ -891,11 +1204,30 @@ export default function CandidateProfilePage() {
 
               {/* Preferred Shift */}
               <div>
-                <Label htmlFor="preferred_shift" className={cn(labelClass, "mb-1.5 block")}>
-                  Preferred Shift <span className="text-red-400">*</span>
-                </Label>
-                <Select value={formData.preferred_shift} onValueChange={(value) => handleInputChange('preferred_shift', value)}>
-                  <SelectTrigger className={inputClass}>
+                <div className="flex items-center gap-2 mb-1.5">
+                  <Label htmlFor="preferred_shift" className={cn(labelClass)}>
+                    Preferred Shift <span className="text-red-400">*</span>
+                  </Label>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Info className="h-3 w-3 text-gray-500 cursor-pointer hover:text-gray-300" />
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p className="text-xs">Select your preferred working hours (Day, Night, or Both)</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </div>
+                <Select 
+                  value={formData.preferred_shift} 
+                  onValueChange={(value) => {
+                    handleInputChange('preferred_shift', value)
+                    handleBlur('preferred_shift')
+                  }}
+                >
+                  <SelectTrigger className={cn(
+                    inputClass,
+                    errors.preferred_shift && touched.preferred_shift && "border-red-500/50 focus:border-red-500/50 focus:ring-red-500/20"
+                  )}>
                     <SelectValue placeholder="Select preferred shift" />
                   </SelectTrigger>
                   <SelectContent className="bg-[#1a1a1d] border-white/10 text-white">
@@ -906,15 +1238,37 @@ export default function CandidateProfilePage() {
                     ))}
                   </SelectContent>
                 </Select>
+                {errors.preferred_shift && touched.preferred_shift && (
+                  <p className="text-xs text-red-400 mt-1">{errors.preferred_shift}</p>
+                )}
               </div>
 
               {/* Preferred Work Setup */}
               <div>
-                <Label htmlFor="preferred_work_setup" className={cn(labelClass, "mb-1.5 block")}>
-                  Preferred Work Setup <span className="text-red-400">*</span>
-                </Label>
-                <Select value={formData.preferred_work_setup} onValueChange={(value) => handleInputChange('preferred_work_setup', value)}>
-                  <SelectTrigger className={inputClass}>
+                <div className="flex items-center gap-2 mb-1.5">
+                  <Label htmlFor="preferred_work_setup" className={cn(labelClass)}>
+                    Preferred Work Setup <span className="text-red-400">*</span>
+                  </Label>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Info className="h-3 w-3 text-gray-500 cursor-pointer hover:text-gray-300" />
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p className="text-xs">Choose your preferred work arrangement (Office, Remote, Hybrid, or Any)</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </div>
+                <Select 
+                  value={formData.preferred_work_setup} 
+                  onValueChange={(value) => {
+                    handleInputChange('preferred_work_setup', value)
+                    handleBlur('preferred_work_setup')
+                  }}
+                >
+                  <SelectTrigger className={cn(
+                    inputClass,
+                    errors.preferred_work_setup && touched.preferred_work_setup && "border-red-500/50 focus:border-red-500/50 focus:ring-red-500/20"
+                  )}>
                     <SelectValue placeholder="Select work setup" />
                   </SelectTrigger>
                   <SelectContent className="bg-[#1a1a1d] border-white/10 text-white">
@@ -925,6 +1279,9 @@ export default function CandidateProfilePage() {
                     ))}
                   </SelectContent>
                 </Select>
+                {errors.preferred_work_setup && touched.preferred_work_setup && (
+                  <p className="text-xs text-red-400 mt-1">{errors.preferred_work_setup}</p>
+                )}
               </div>
             </div>
           </div>
