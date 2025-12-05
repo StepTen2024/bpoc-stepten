@@ -2307,6 +2307,33 @@ export default function ResumeBuilderPage() {
         
         setExtractedResumeData(processedResume);
         setError(null);
+        
+        // Save extracted resume to candidate_resumes table in Supabase
+        try {
+          const saveResponse = await fetch('/api/candidates/resume/save-extracted', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${sessionToken}`,
+              'x-user-id': String(user?.id)
+            },
+            body: JSON.stringify({
+              resumeData: processedResume,
+              originalFileName: file.name,
+              candidateId: user?.id
+            })
+          });
+          
+          if (saveResponse.ok) {
+            const saveResult = await saveResponse.json();
+            console.log('✅ Extracted resume saved to candidate_resumes:', saveResult);
+          } else {
+            console.warn('⚠️ Failed to save extracted resume to database (non-critical)');
+          }
+        } catch (saveError) {
+          console.warn('⚠️ Error saving extracted resume (non-critical):', saveError);
+        }
+        
         toast.success('Resume extracted successfully! Ready for AI analysis.');
         
         // Move to Step 2 (AI Analysis) - explicit step control
