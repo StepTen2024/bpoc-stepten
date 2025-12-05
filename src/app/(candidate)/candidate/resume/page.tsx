@@ -416,8 +416,19 @@ export default function ResumeBuilderPage() {
           localStorage.getItem('bpoc_processed_resumes') ||
           localStorage.getItem('bpoc_uploaded_files');
         
+        // Check if we're in the middle of the multi-step flow (Step 1 or 2)
+        // If currentStep < 3, don't auto-load from localStorage - let the step flow control things
+        const bpocProcessedResumes = localStorage.getItem('bpoc_processed_resumes');
+        if (bpocProcessedResumes && !resumeData) {
+          // User uploaded but hasn't finished the flow - show Step 1/2 UI
+          console.log('ℹ️ Found processed resumes in localStorage - user is in upload flow');
+          setIsLoading(false);
+          setError('Resume extracted. Continue with AI analysis.');
+          return;
+        }
+        
         if (!hasLocalResumeData) {
-          // No resume data at all - show upload prompt
+          // No resume data at all - show upload prompt (Step 1)
           setIsLoading(false);
           setError('No resume data found. Please upload a resume first.');
           return;
@@ -464,11 +475,16 @@ export default function ResumeBuilderPage() {
               }
               
               setIsLoading(false);
+              setCurrentStep(3); // Already have complete resume - go to Step 3
               // Clear the editing flag
               localStorage.removeItem('editingExistingResume');
             } else {
-              // Only call API for new resume generation
-              generateImprovedResume(parsedData);
+              // resumeData exists but not editing - this is from a previous complete flow
+              // Load it and go to Step 3 (Build)
+              console.log('ℹ️ Found existing resumeData - loading for editing');
+              setImprovedResume(parsedData.content || parsedData);
+              setIsLoading(false);
+              setCurrentStep(3);
             }
           } catch (error) {
             console.error('Error parsing resume data:', error);
@@ -2286,14 +2302,18 @@ export default function ResumeBuilderPage() {
       
       // Set the extracted resume data and move to Step 2
       if (processedResume) {
+        // Clear old resumeData from localStorage to prevent auto-skip to Step 3
+        localStorage.removeItem('resumeData');
+        
         setExtractedResumeData(processedResume);
         setError(null);
         toast.success('Resume extracted successfully! Ready for AI analysis.');
         
-        // Move to Step 2 (AI Analysis)
+        // Move to Step 2 (AI Analysis) - explicit step control
         setTimeout(() => {
           setIsProcessingUpload(false);
           setCurrentStep(2);
+          console.log('✅ Moving to Step 2 (AI Analysis)');
         }, 500);
       } else {
         throw new Error('No data extracted from resume');
