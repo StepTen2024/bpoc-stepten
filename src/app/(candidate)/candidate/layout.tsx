@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { usePathname, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { useAuth } from '@/contexts/AuthContext'
+import { supabase } from '@/lib/supabase'
 import { 
   LayoutDashboard, 
   User, 
@@ -38,17 +39,48 @@ export default function CandidateLayout({
 }) {
   const pathname = usePathname()
   const router = useRouter()
-  const { user, signOut } = useAuth()
+  const { user, loading, signOut } = useAuth()
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [profile, setProfile] = useState<any>(null)
+  const [authChecked, setAuthChecked] = useState(false)
+  const [isAuthenticated, setIsAuthenticated] = useState(false)
 
   useEffect(() => {
-    if (!user) {
+    const checkAuth = async () => {
+      // Wait for AuthContext to finish loading
+      if (loading) {
+        return
+      }
+
+      // If AuthContext has a user, we're good
+      if (user) {
+        setIsAuthenticated(true)
+        setAuthChecked(true)
+        fetchProfile()
+        return
+      }
+
+      // Double-check with Supabase directly (AuthContext might not have updated yet)
+      try {
+        const { data: { session } } = await supabase.auth.getSession()
+        if (session?.user) {
+          console.log('✅ Layout: Session found directly from Supabase')
+          setIsAuthenticated(true)
+          setAuthChecked(true)
+          fetchProfile()
+          return
+        }
+      } catch (error) {
+        console.error('Layout auth check error:', error)
+      }
+
+      // No user found anywhere - redirect to home
+      console.log('❌ Layout: No user found, redirecting to home')
       router.push('/')
-      return
     }
-    fetchProfile()
-  }, [user])
+
+    checkAuth()
+  }, [user, loading, router])
 
   async function fetchProfile() {
     if (!user?.id) return
@@ -68,7 +100,20 @@ export default function CandidateLayout({
     router.push('/')
   }
 
-  if (!user) {
+  // Show loading state while checking auth
+  if (loading || !authChecked) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading...</p>
+        </div>
+      </div>
+    )
+  }
+
+  // If not authenticated after check, return null (redirect already happening)
+  if (!isAuthenticated) {
     return null
   }
 
