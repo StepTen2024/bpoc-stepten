@@ -7,124 +7,134 @@ import {
   Search,
   DollarSign,
   Calendar,
+  Clock,
   CheckCircle,
   XCircle,
-  Clock,
-  User,
-  Briefcase,
-  Send
+  Eye,
+  Send,
+  Loader2,
+  Briefcase
 } from 'lucide-react';
 import { Card, CardContent } from '@/components/shared/ui/card';
 import { Button } from '@/components/shared/ui/button';
 import { Input } from '@/components/shared/ui/input';
 import { Badge } from '@/components/shared/ui/badge';
-import { Avatar, AvatarFallback } from '@/components/shared/ui/avatar';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/shared/ui/avatar';
 
 interface Offer {
   id: string;
+  applicationId: string;
+  candidateId: string;
   candidateName: string;
   candidateEmail: string;
+  candidateAvatar?: string;
+  jobId: string;
   jobTitle: string;
-  company: string;
-  salary: string;
-  startDate: string;
-  status: 'pending' | 'accepted' | 'declined' | 'expired';
-  sentAt: string;
+  salaryOffered: number;
+  salaryType: string;
+  currency: string;
+  startDate?: string;
+  benefits: string[];
+  status: string;
+  sentAt?: string;
+  viewedAt?: string;
   respondedAt?: string;
+  candidateResponse?: string;
+  createdAt: string;
 }
 
 export default function OffersPage() {
   const [offers, setOffers] = useState<Offer[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    // TODO: Fetch from API
-    setOffers([
-      {
-        id: '1',
-        candidateName: 'John Smith',
-        candidateEmail: 'john@email.com',
-        jobTitle: 'Senior Software Engineer',
-        company: 'TechCorp Inc.',
-        salary: '$160,000/year',
-        startDate: '2024-04-01',
-        status: 'pending',
-        sentAt: '2024-03-15T10:00:00Z',
-      },
-      {
-        id: '2',
-        candidateName: 'Sarah Johnson',
-        candidateEmail: 'sarah@email.com',
-        jobTitle: 'Product Designer',
-        company: 'StartupXYZ',
-        salary: '$95,000/year',
-        startDate: '2024-03-25',
-        status: 'accepted',
-        sentAt: '2024-03-10T14:00:00Z',
-        respondedAt: '2024-03-12T09:30:00Z',
-      },
-      {
-        id: '3',
-        candidateName: 'Mike Williams',
-        candidateEmail: 'mike@email.com',
-        jobTitle: 'Marketing Manager',
-        company: 'BrandCo',
-        salary: '$85,000/year',
-        startDate: '2024-04-15',
-        status: 'declined',
-        sentAt: '2024-03-08T11:00:00Z',
-        respondedAt: '2024-03-09T16:00:00Z',
-      },
-    ]);
-    setLoading(false);
-  }, []);
+  const fetchOffers = async () => {
+    try {
+      const response = await fetch(`/api/admin/offers?status=${statusFilter}`);
+      const data = await response.json();
+      
+      if (response.ok) {
+        setOffers(data.offers || []);
+      }
+    } catch (error) {
+      console.error('Failed to fetch offers:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-  const getStatusBadge = (status: Offer['status']) => {
-    const styles = {
-      pending: { bg: 'bg-orange-500/20', text: 'text-orange-400', border: 'border-orange-500/30', icon: Clock },
-      accepted: { bg: 'bg-emerald-500/20', text: 'text-emerald-400', border: 'border-emerald-500/30', icon: CheckCircle },
-      declined: { bg: 'bg-red-500/20', text: 'text-red-400', border: 'border-red-500/30', icon: XCircle },
-      expired: { bg: 'bg-gray-500/20', text: 'text-gray-400', border: 'border-gray-500/30', icon: Clock },
+  useEffect(() => {
+    fetchOffers();
+  }, [statusFilter]);
+
+  const getStatusBadge = (status: string) => {
+    const styles: Record<string, { bg: string; icon: React.ElementType }> = {
+      draft: { bg: 'bg-gray-500/20 text-gray-400 border-gray-500/30', icon: Clock },
+      sent: { bg: 'bg-cyan-500/20 text-cyan-400 border-cyan-500/30', icon: Send },
+      viewed: { bg: 'bg-purple-500/20 text-purple-400 border-purple-500/30', icon: Eye },
+      accepted: { bg: 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30', icon: CheckCircle },
+      rejected: { bg: 'bg-red-500/20 text-red-400 border-red-500/30', icon: XCircle },
+      negotiating: { bg: 'bg-orange-500/20 text-orange-400 border-orange-500/30', icon: DollarSign },
+      expired: { bg: 'bg-gray-500/20 text-gray-400 border-gray-500/30', icon: Clock },
+      withdrawn: { bg: 'bg-red-500/20 text-red-400 border-red-500/30', icon: XCircle },
     };
-    const style = styles[status];
+    const style = styles[status] || styles.draft;
     const Icon = style.icon;
     return (
-      <Badge variant="outline" className={`${style.bg} ${style.text} ${style.border} capitalize`}>
+      <Badge variant="outline" className={`${style.bg} capitalize`}>
         <Icon className="h-3 w-3 mr-1" />
         {status}
       </Badge>
     );
   };
 
+  const formatSalary = (offer: Offer) => {
+    const formatted = Number(offer.salaryOffered).toLocaleString();
+    return `${offer.currency} ${formatted}/${offer.salaryType}`;
+  };
+
+  const filteredOffers = offers.filter(offer =>
+    offer.candidateName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    offer.jobTitle.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  // Count by status
+  const statusCounts = offers.reduce((acc, o) => {
+    acc[o.status] = (acc[o.status] || 0) + 1;
+    return acc;
+  }, {} as Record<string, number>);
+
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-white">Offers</h1>
-          <p className="text-gray-400 mt-1">Track job offers and hiring outcomes</p>
-        </div>
-        <Button className="bg-gradient-to-r from-red-500 to-orange-600 hover:from-red-600 hover:to-orange-700">
-          <Send className="h-4 w-4 mr-2" />
-          Send New Offer
-        </Button>
+      <div>
+        <h1 className="text-3xl font-bold text-white">Job Offers</h1>
+        <p className="text-gray-400 mt-1">Manage offers sent to candidates</p>
       </div>
 
       {/* Stats */}
       <div className="grid grid-cols-4 gap-4">
         <Card className="bg-white/5 border-white/10">
           <CardContent className="p-4 text-center">
-            <p className="text-2xl font-bold text-orange-400">
-              {offers.filter(o => o.status === 'pending').length}
+            <p className="text-2xl font-bold text-cyan-400">
+              {statusCounts['sent'] || 0}
             </p>
-            <p className="text-gray-400 text-sm">Pending</p>
+            <p className="text-gray-400 text-sm">Pending Response</p>
+          </CardContent>
+        </Card>
+        <Card className="bg-white/5 border-white/10">
+          <CardContent className="p-4 text-center">
+            <p className="text-2xl font-bold text-purple-400">
+              {statusCounts['viewed'] || 0}
+            </p>
+            <p className="text-gray-400 text-sm">Viewed</p>
           </CardContent>
         </Card>
         <Card className="bg-white/5 border-white/10">
           <CardContent className="p-4 text-center">
             <p className="text-2xl font-bold text-emerald-400">
-              {offers.filter(o => o.status === 'accepted').length}
+              {statusCounts['accepted'] || 0}
             </p>
             <p className="text-gray-400 text-sm">Accepted</p>
           </CardContent>
@@ -132,84 +142,126 @@ export default function OffersPage() {
         <Card className="bg-white/5 border-white/10">
           <CardContent className="p-4 text-center">
             <p className="text-2xl font-bold text-red-400">
-              {offers.filter(o => o.status === 'declined').length}
+              {statusCounts['rejected'] || 0}
             </p>
             <p className="text-gray-400 text-sm">Declined</p>
           </CardContent>
         </Card>
-        <Card className="bg-white/5 border-white/10">
-          <CardContent className="p-4 text-center">
-            <p className="text-2xl font-bold text-cyan-400">
-              {Math.round((offers.filter(o => o.status === 'accepted').length / offers.length) * 100) || 0}%
-            </p>
-            <p className="text-gray-400 text-sm">Acceptance Rate</p>
-          </CardContent>
-        </Card>
       </div>
 
-      {/* Search */}
-      <div className="relative max-w-md">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-        <Input
-          placeholder="Search offers..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          className="pl-10 bg-white/5 border-white/10 text-white"
-        />
+      {/* Filters */}
+      <div className="flex gap-4">
+        <div className="relative flex-1 max-w-md">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+          <Input
+            placeholder="Search offers..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-10 bg-white/5 border-white/10 text-white"
+          />
+        </div>
+        <select
+          value={statusFilter}
+          onChange={(e) => setStatusFilter(e.target.value)}
+          className="px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white"
+        >
+          <option value="all">All Status</option>
+          <option value="sent">Pending</option>
+          <option value="viewed">Viewed</option>
+          <option value="accepted">Accepted</option>
+          <option value="rejected">Declined</option>
+        </select>
       </div>
 
       {/* Offers List */}
-      <div className="space-y-4">
-        {offers.map((offer, index) => (
-          <motion.div
-            key={offer.id}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: index * 0.05 }}
-          >
-            <Card className="bg-white/5 border-white/10 hover:border-emerald-500/30 transition-all">
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-4">
-                    <Avatar className="h-12 w-12">
-                      <AvatarFallback className="bg-gradient-to-br from-emerald-500 to-cyan-600 text-white">
-                        {offer.candidateName.split(' ').map(n => n[0]).join('')}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div>
-                      <h3 className="text-white font-semibold">{offer.candidateName}</h3>
-                      <div className="flex items-center gap-2 text-gray-400 text-sm">
-                        <Briefcase className="h-4 w-4" />
-                        <span>{offer.jobTitle} at {offer.company}</span>
+      {loading ? (
+        <div className="text-center py-12">
+          <Loader2 className="h-8 w-8 text-gray-400 animate-spin mx-auto" />
+          <p className="text-gray-400 mt-2">Loading offers...</p>
+        </div>
+      ) : filteredOffers.length === 0 ? (
+        <Card className="bg-white/5 border-white/10">
+          <CardContent className="p-12 text-center">
+            <Gift className="h-12 w-12 text-gray-500 mx-auto mb-4" />
+            <h3 className="text-lg font-semibold text-white mb-2">No Offers Yet</h3>
+            <p className="text-gray-400">Offers will appear here when you send them to candidates from interviews.</p>
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="space-y-4">
+          {filteredOffers.map((offer, index) => (
+            <motion.div
+              key={offer.id}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: index * 0.05 }}
+            >
+              <Card className={`border-white/10 transition-all ${
+                offer.status === 'accepted'
+                  ? 'bg-emerald-500/5 border-emerald-500/30'
+                  : 'bg-white/5 hover:border-purple-500/30'
+              }`}>
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-4">
+                      <Avatar className="h-12 w-12">
+                        <AvatarImage src={offer.candidateAvatar} />
+                        <AvatarFallback className="bg-gradient-to-br from-purple-500 to-pink-600 text-white">
+                          {offer.candidateName.split(' ').map(n => n[0]).join('')}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div>
+                        <h3 className="text-white font-semibold">{offer.candidateName}</h3>
+                        <div className="flex items-center gap-2 text-gray-400 text-sm">
+                          <Briefcase className="h-4 w-4" />
+                          <span>{offer.jobTitle}</span>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-6">
+                      <div className="text-right">
+                        <div className="flex items-center gap-2 text-white font-semibold">
+                          <DollarSign className="h-4 w-4 text-emerald-400" />
+                          {formatSalary(offer)}
+                        </div>
+                        {offer.startDate && (
+                          <div className="flex items-center gap-1 text-gray-400 text-sm">
+                            <Calendar className="h-3 w-3" />
+                            Start: {new Date(offer.startDate).toLocaleDateString()}
+                          </div>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-3">
+                        {getStatusBadge(offer.status)}
+                        {offer.sentAt && (
+                          <span className="text-gray-500 text-sm">
+                            Sent {new Date(offer.sentAt).toLocaleDateString()}
+                          </span>
+                        )}
                       </div>
                     </div>
                   </div>
-                  <div className="flex items-center gap-6">
-                    <div className="text-right">
-                      <div className="flex items-center gap-2 text-emerald-400 font-semibold">
-                        <DollarSign className="h-4 w-4" />
-                        {offer.salary}
-                      </div>
-                      <div className="flex items-center gap-2 text-gray-400 text-sm">
-                        <Calendar className="h-4 w-4" />
-                        Start: {new Date(offer.startDate).toLocaleDateString()}
-                      </div>
+                  {offer.status === 'accepted' && (
+                    <div className="mt-4 p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/20">
+                      <p className="text-emerald-300 text-sm">
+                        🎉 <span className="font-medium">Hired!</span> {offer.candidateName} accepted this offer
+                        {offer.respondedAt && ` on ${new Date(offer.respondedAt).toLocaleDateString()}`}.
+                      </p>
                     </div>
-                    <div className="text-right">
-                      <p className="text-gray-500 text-xs">Sent {new Date(offer.sentAt).toLocaleDateString()}</p>
-                      {offer.respondedAt && (
-                        <p className="text-gray-500 text-xs">Responded {new Date(offer.respondedAt).toLocaleDateString()}</p>
-                      )}
+                  )}
+                  {offer.status === 'rejected' && offer.candidateResponse && (
+                    <div className="mt-4 p-3 rounded-lg bg-red-500/10 border border-red-500/20">
+                      <p className="text-red-300 text-sm">
+                        <span className="font-medium">Declined:</span> {offer.candidateResponse}
+                      </p>
                     </div>
-                    {getStatusBadge(offer.status)}
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </motion.div>
-        ))}
-      </div>
+                  )}
+                </CardContent>
+              </Card>
+            </motion.div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
-

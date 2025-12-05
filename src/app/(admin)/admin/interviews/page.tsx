@@ -14,7 +14,10 @@ import {
   CheckCircle,
   XCircle,
   AlertCircle,
-  Loader2
+  Loader2,
+  Gift,
+  DollarSign,
+  X
 } from 'lucide-react';
 import { Card, CardContent } from '@/components/shared/ui/card';
 import { Button } from '@/components/shared/ui/button';
@@ -45,6 +48,9 @@ export default function InterviewsPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const [offerModal, setOfferModal] = useState<Interview | null>(null);
+  const [offerData, setOfferData] = useState({ salary: '', startDate: '' });
+  const [sendingOffer, setSendingOffer] = useState(false);
 
   const fetchInterviews = async () => {
     try {
@@ -87,6 +93,34 @@ export default function InterviewsPage() {
       console.error('Failed to update outcome:', error);
     } finally {
       setActionLoading(null);
+    }
+  };
+
+  const handleSendOffer = async () => {
+    if (!offerModal || !offerData.salary) return;
+    
+    setSendingOffer(true);
+    try {
+      const response = await fetch('/api/admin/offers', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          applicationId: offerModal.applicationId,
+          salaryOffered: parseFloat(offerData.salary),
+          startDate: offerData.startDate || null,
+        }),
+      });
+
+      if (response.ok) {
+        setOfferModal(null);
+        setOfferData({ salary: '', startDate: '' });
+        // Show success or redirect to offers
+        window.location.href = '/admin/offers';
+      }
+    } catch (error) {
+      console.error('Failed to send offer:', error);
+    } finally {
+      setSendingOffer(false);
     }
   };
 
@@ -257,13 +291,25 @@ export default function InterviewsPage() {
                         {getStatusBadge(interview.status)}
                       </div>
                       {interview.outcome && (
-                        <Badge variant="outline" className={
-                          interview.outcome === 'passed' 
-                            ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30'
-                            : 'bg-red-500/20 text-red-400 border-red-500/30'
-                        }>
-                          {interview.outcome}
-                        </Badge>
+                        <div className="flex items-center gap-2">
+                          <Badge variant="outline" className={
+                            interview.outcome === 'passed' 
+                              ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30'
+                              : 'bg-red-500/20 text-red-400 border-red-500/30'
+                          }>
+                            {interview.outcome}
+                          </Badge>
+                          {interview.outcome === 'passed' && (
+                            <Button
+                              size="sm"
+                              className="bg-gradient-to-r from-purple-500 to-pink-600 hover:from-purple-600 hover:to-pink-700"
+                              onClick={() => setOfferModal(interview)}
+                            >
+                              <Gift className="h-4 w-4 mr-1" />
+                              Make Offer
+                            </Button>
+                          )}
+                        </div>
                       )}
                       {interview.status === 'scheduled' && !interview.outcome && (
                         <div className="flex gap-2">
@@ -299,6 +345,95 @@ export default function InterviewsPage() {
               </Card>
             </motion.div>
           ))}
+        </div>
+      )}
+
+      {/* Offer Modal */}
+      {offerModal && (
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="bg-[#0a0a0f] border border-white/10 rounded-2xl p-6 w-full max-w-md"
+          >
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-xl font-bold text-white">Send Job Offer</h2>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setOfferModal(null)}
+                className="text-gray-400 hover:text-white"
+              >
+                <X className="h-5 w-5" />
+              </Button>
+            </div>
+            
+            <div className="space-y-4">
+              <div>
+                <p className="text-gray-400 text-sm mb-1">Candidate</p>
+                <p className="text-white font-medium">{offerModal.candidateName}</p>
+              </div>
+              <div>
+                <p className="text-gray-400 text-sm mb-1">Position</p>
+                <p className="text-white font-medium">{offerModal.jobTitle}</p>
+              </div>
+              
+              <div>
+                <label className="block text-gray-400 text-sm mb-2">
+                  Monthly Salary (PHP) *
+                </label>
+                <div className="relative">
+                  <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                  <Input
+                    type="number"
+                    placeholder="e.g. 50000"
+                    value={offerData.salary}
+                    onChange={(e) => setOfferData(prev => ({ ...prev, salary: e.target.value }))}
+                    className="pl-10 bg-white/5 border-white/10 text-white"
+                  />
+                </div>
+              </div>
+              
+              <div>
+                <label className="block text-gray-400 text-sm mb-2">
+                  Start Date (Optional)
+                </label>
+                <div className="relative">
+                  <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                  <Input
+                    type="date"
+                    value={offerData.startDate}
+                    onChange={(e) => setOfferData(prev => ({ ...prev, startDate: e.target.value }))}
+                    className="pl-10 bg-white/5 border-white/10 text-white"
+                  />
+                </div>
+              </div>
+              
+              <div className="flex gap-3 mt-6">
+                <Button
+                  variant="outline"
+                  className="flex-1 border-white/10 text-gray-400"
+                  onClick={() => setOfferModal(null)}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  className="flex-1 bg-gradient-to-r from-purple-500 to-pink-600 hover:from-purple-600 hover:to-pink-700"
+                  onClick={handleSendOffer}
+                  disabled={!offerData.salary || sendingOffer}
+                >
+                  {sendingOffer ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <>
+                      <Gift className="h-4 w-4 mr-2" />
+                      Send Offer
+                    </>
+                  )}
+                </Button>
+              </div>
+            </div>
+          </motion.div>
         </div>
       )}
     </div>
