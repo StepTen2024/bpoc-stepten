@@ -193,6 +193,8 @@ export default function ResumeBuilderPage() {
   const [analysisResults, setAnalysisResults] = useState<any>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysisProgress, setAnalysisProgress] = useState(0);
+  // Flag to prevent initial useEffect from overriding step flow during fresh upload
+  const [isInFreshUploadFlow, setIsInFreshUploadFlow] = useState(false);
   
   // Upload UI states for when no resume exists
   const [showUploadUI, setShowUploadUI] = useState(false);
@@ -406,6 +408,13 @@ export default function ResumeBuilderPage() {
 
     // Check database first, then fallback to localStorage
     checkGeneratedResume().then((foundGenerated) => {
+      // Don't interfere if user is actively in the upload flow
+      if (isInFreshUploadFlow) {
+        console.log('ℹ️ Skipping localStorage check - user is in fresh upload flow');
+        setIsLoading(false);
+        return;
+      }
+      
       if (!foundGenerated) {
         // Fallback to localStorage logic
         const resumeData = localStorage.getItem('resumeData');
@@ -2234,6 +2243,7 @@ export default function ResumeBuilderPage() {
     setUploadedFiles([file]);
     setIsProcessingUpload(true);
     setUploadProgress(0);
+    setIsInFreshUploadFlow(true); // Flag to prevent useEffect from overriding step flow
     
     try {
       // Get session token
@@ -2419,6 +2429,7 @@ export default function ResumeBuilderPage() {
         setIsAnalyzing(false);
         setCurrentStep(3);
         setError(null); // Clear any error to show build UI
+        setIsInFreshUploadFlow(false); // Clear the flag - flow complete
       }, 500);
       
     } catch (err) {
@@ -2436,6 +2447,7 @@ export default function ResumeBuilderPage() {
     }
     setCurrentStep(3);
     setError(null);
+    setIsInFreshUploadFlow(false); // Clear the flag - flow complete
   };
 
   // Handle drop for upload UI (handleDragOver already exists in file)
@@ -2483,7 +2495,8 @@ export default function ResumeBuilderPage() {
   );
 
   // Show Step 1 (Upload) or Step 2 (Analysis) if not yet at Step 3
-  if (error || currentStep < 3) {
+  // Also force show if we're in the fresh upload flow (prevents race conditions)
+  if (error || currentStep < 3 || (isInFreshUploadFlow && currentStep !== 3)) {
     return (
       <div className="space-y-8">
         {/* Header */}
