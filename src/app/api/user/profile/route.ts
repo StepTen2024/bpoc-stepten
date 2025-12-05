@@ -15,8 +15,8 @@ export async function GET(request: NextRequest) {
 
     console.log('🔍 API: Fetching profile from SUPABASE for user:', userId)
 
-    // Get candidate (basic info) from Supabase
-    const candidate = await getCandidateById(userId)
+    // Get candidate (basic info) from Supabase - use admin client to bypass RLS
+    const candidate = await getCandidateById(userId, true)
     if (!candidate) {
       console.log('❌ API: Candidate not found in Supabase:', userId)
       return NextResponse.json({ error: 'User not found' }, { status: 404 })

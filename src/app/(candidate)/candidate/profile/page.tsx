@@ -160,7 +160,7 @@ export default function CandidateProfilePage() {
           notice_period_days: data.user.notice_period_days ? String(data.user.notice_period_days) : '',
           preferred_shift: data.user.preferred_shift || '',
           preferred_work_setup: data.user.preferred_work_setup || '',
-          current_mood: data.user.current_mood || '',
+          current_mood: data.user.current_mood || 'prefer_not_to_say',
         })
       }
     } catch (error) {
@@ -284,7 +284,7 @@ export default function CandidateProfilePage() {
         notice_period_days: formData.notice_period_days ? parseInt(formData.notice_period_days) : null,
         preferred_shift: formData.preferred_shift || null,
         preferred_work_setup: formData.preferred_work_setup || null,
-        current_mood: formData.current_mood || null,
+        current_mood: formData.current_mood === 'prefer_not_to_say' || !formData.current_mood ? null : formData.current_mood,
         profile_completed: true, // Mark as completed when saved
       }
       
@@ -630,7 +630,7 @@ export default function CandidateProfilePage() {
                     <SelectValue placeholder="Select your mood" />
                   </SelectTrigger>
                   <SelectContent className="bg-[#1a1a1d] border-white/10 text-white">
-                    <SelectItem value="">Prefer not to say</SelectItem>
+                    <SelectItem value="prefer_not_to_say">Prefer not to say</SelectItem>
                     {MOOD_OPTIONS.map((option) => (
                       <SelectItem key={option.value} value={option.value}>
                         {option.icon} {option.label}

@@ -183,7 +183,7 @@ export async function POST(request: NextRequest) {
           last_name: userData.last_name || existingCandidate.last_name,
           phone: userData.phone || existingCandidate.phone,
           avatar_url: userData.avatar_url || existingCandidate.avatar_url,
-        })
+        }, true) // Use admin client to bypass RLS
         console.log('✅ [sync] Candidate updated successfully')
 
         // Update or create profile
