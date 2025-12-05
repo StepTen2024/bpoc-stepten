@@ -157,7 +157,7 @@ export default function CandidateDashboardPage() {
     }
   }
 
-  if (loading || loadingStats || checkingAuth) {
+  if (loading || loadingStats || checkingAuth || !currentUserId) {
     return (
       <div className="p-8">
         <div className="text-center">
@@ -166,10 +166,6 @@ export default function CandidateDashboardPage() {
         </div>
       </div>
     )
-  }
-
-  if (!user) {
-    return null
   }
 
   const completionSteps = [
@@ -207,7 +203,7 @@ export default function CandidateDashboardPage() {
       <ProfileCompletionModal
         open={showProfileModal}
         onOpenChange={setShowProfileModal}
-        userId={user.id}
+        userId={currentUserId}
       />
 
       <div className="p-8">
