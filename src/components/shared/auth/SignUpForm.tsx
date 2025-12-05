@@ -301,6 +301,10 @@ export default function SignUpForm({ open, onOpenChange, onSwitchToLogin }: Sign
           // Close the signup modal
           onOpenChange(false)
           
+          // Wait for AuthContext to update before redirecting
+          // This ensures the user state is set before dashboard checks authentication
+          await new Promise(resolve => setTimeout(resolve, 1000))
+          
           // Redirect to candidate dashboard
           if (typeof window !== 'undefined') {
             window.location.href = '/candidate/dashboard'

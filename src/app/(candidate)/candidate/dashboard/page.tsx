@@ -50,9 +50,22 @@ export default function CandidateDashboardPage() {
   const [showProfileModal, setShowProfileModal] = useState(false)
 
   useEffect(() => {
+    // Wait a bit longer for auth state to settle after signup
     if (!loading && !user) {
-      router.push('/')
-      return
+      // Check if user just signed up - give them a moment for auth to sync
+      const justSignedUp = typeof window !== 'undefined' ? sessionStorage.getItem('hasSignedIn') : null
+      if (justSignedUp) {
+        // Wait a bit more for auth context to update
+        const timeout = setTimeout(() => {
+          if (!user) {
+            router.push('/')
+          }
+        }, 2000)
+        return () => clearTimeout(timeout)
+      } else {
+        router.push('/')
+        return
+      }
     }
 
     if (user) {
@@ -61,7 +74,7 @@ export default function CandidateDashboardPage() {
       
       // Profile completion modal removed - users can access it from profile page when ready
     }
-  }, [user, loading])
+  }, [user, loading, router])
 
   async function fetchProfile() {
     try {
