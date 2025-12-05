@@ -4,6 +4,32 @@
 -- ============================================
 
 -- ============================================
+-- 0. CREATE DEFAULT COMPANY & AGENCY CLIENT FOR JOBS
+-- ============================================
+INSERT INTO companies (id, name, slug, is_active, created_at, updated_at)
+VALUES (
+    'a0000000-0000-0000-0000-000000000001',
+    'ShoreAgents Clients',
+    'shoreagents-clients',
+    true,
+    NOW(),
+    NOW()
+)
+ON CONFLICT (slug) DO NOTHING;
+
+-- Create agency_client linking ShoreAgents to the company
+INSERT INTO agency_clients (id, agency_id, company_id, status, created_at, updated_at)
+VALUES (
+    'c0000000-0000-0000-0000-000000000001',
+    'b582d9a1-1e21-4f33-8cf6-1b24e4ab6c5f', -- ShoreAgents agency_id
+    'a0000000-0000-0000-0000-000000000001', -- Company ID
+    'active',
+    NOW(),
+    NOW()
+)
+ON CONFLICT (agency_id, company_id) DO NOTHING;
+
+-- ============================================
 -- 1. CREATE ADMIN USER IN AUTH (do this manually in Supabase Dashboard first)
 -- Go to Authentication > Users > Add User
 -- Email: admin@bpoc.com

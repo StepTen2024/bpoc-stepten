@@ -31,6 +31,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/shared/ui/dropdown-menu';
+import CreateJobModal from '@/components/admin/CreateJobModal';
 
 interface Job {
   id: string;
@@ -51,6 +52,14 @@ export default function JobsPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [loading, setLoading] = useState(true);
+  const [showCreateModal, setShowCreateModal] = useState(false);
+
+  const refreshJobs = () => {
+    setLoading(true);
+    // Trigger re-fetch
+    setSearchQuery(searchQuery + ' ');
+    setTimeout(() => setSearchQuery(searchQuery.trim()), 100);
+  };
 
   useEffect(() => {
     const fetchJobs = async () => {
@@ -124,7 +133,10 @@ export default function JobsPage() {
           <h1 className="text-3xl font-bold text-white">Jobs</h1>
           <p className="text-gray-400 mt-1">Manage job postings and approvals</p>
         </div>
-        <Button className="bg-gradient-to-r from-red-500 to-orange-600 hover:from-red-600 hover:to-orange-700">
+        <Button 
+          onClick={() => setShowCreateModal(true)}
+          className="bg-gradient-to-r from-red-500 to-orange-600 hover:from-red-600 hover:to-orange-700"
+        >
           <Plus className="h-4 w-4 mr-2" />
           Post New Job
         </Button>
@@ -184,85 +196,109 @@ export default function JobsPage() {
 
       {/* Jobs List */}
       <div className="space-y-4">
-        {filteredJobs.map((job, index) => (
-          <motion.div
-            key={job.id}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: index * 0.05 }}
-          >
-            <Card className="bg-white/5 border-white/10 hover:border-red-500/30 transition-all">
-              <CardContent className="p-6">
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-3 mb-2">
-                      <h3 className="text-lg font-semibold text-white">{job.title}</h3>
-                      {getStatusBadge(job.status)}
-                      {getTypeBadge(job.type)}
+        {filteredJobs.length === 0 ? (
+          <Card className="bg-white/5 border-white/10">
+            <CardContent className="p-12 text-center">
+              <Briefcase className="h-12 w-12 text-gray-500 mx-auto mb-4" />
+              <h3 className="text-lg font-semibold text-white mb-2">No Jobs Found</h3>
+              <p className="text-gray-400 mb-4">Create your first job posting to get started.</p>
+              <Button 
+                onClick={() => setShowCreateModal(true)}
+                className="bg-gradient-to-r from-red-500 to-orange-600"
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                Post New Job
+              </Button>
+            </CardContent>
+          </Card>
+        ) : (
+          filteredJobs.map((job, index) => (
+            <motion.div
+              key={job.id}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: index * 0.05 }}
+            >
+              <Card className="bg-white/5 border-white/10 hover:border-red-500/30 transition-all">
+                <CardContent className="p-6">
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-3 mb-2">
+                        <h3 className="text-lg font-semibold text-white">{job.title}</h3>
+                        {getStatusBadge(job.status)}
+                        {getTypeBadge(job.type)}
+                      </div>
+                      <div className="flex items-center gap-4 text-sm text-gray-400">
+                        <span className="flex items-center gap-1">
+                          <Building2 className="h-4 w-4" />
+                          {job.company}
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <MapPin className="h-4 w-4" />
+                          {job.location}
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <DollarSign className="h-4 w-4" />
+                          {job.salary}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-4 mt-3 text-sm">
+                        <span className="text-gray-500">
+                          Posted by: <span className="text-cyan-400">{job.agencyName}</span>
+                        </span>
+                        <span className="flex items-center gap-1 text-gray-400">
+                          <Users className="h-4 w-4" />
+                          {job.applicantsCount} applicants
+                        </span>
+                        <span className="flex items-center gap-1 text-gray-500">
+                          <Clock className="h-4 w-4" />
+                          {new Date(job.createdAt).toLocaleDateString()}
+                        </span>
+                      </div>
                     </div>
-                    <div className="flex items-center gap-4 text-sm text-gray-400">
-                      <span className="flex items-center gap-1">
-                        <Building2 className="h-4 w-4" />
-                        {job.company}
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <MapPin className="h-4 w-4" />
-                        {job.location}
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <DollarSign className="h-4 w-4" />
-                        {job.salary}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-4 mt-3 text-sm">
-                      <span className="text-gray-500">
-                        Posted by: <span className="text-cyan-400">{job.agencyName}</span>
-                      </span>
-                      <span className="flex items-center gap-1 text-gray-400">
-                        <Users className="h-4 w-4" />
-                        {job.applicantsCount} applicants
-                      </span>
-                      <span className="flex items-center gap-1 text-gray-500">
-                        <Clock className="h-4 w-4" />
-                        {new Date(job.createdAt).toLocaleDateString()}
-                      </span>
-                    </div>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="sm" className="text-gray-400">
+                          <MoreHorizontal className="h-5 w-5" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="bg-slate-900 border-white/10">
+                        <DropdownMenuItem className="text-white hover:bg-white/10">
+                          <Eye className="h-4 w-4 mr-2" /> View Details
+                        </DropdownMenuItem>
+                        <DropdownMenuItem className="text-white hover:bg-white/10">
+                          <Edit className="h-4 w-4 mr-2" /> Edit Job
+                        </DropdownMenuItem>
+                        {job.status === 'pending_approval' && (
+                          <DropdownMenuItem className="text-emerald-400 hover:bg-emerald-500/10">
+                            <CheckCircle className="h-4 w-4 mr-2" /> Approve
+                          </DropdownMenuItem>
+                        )}
+                        {job.status === 'active' && (
+                          <DropdownMenuItem className="text-orange-400 hover:bg-orange-500/10">
+                            <Pause className="h-4 w-4 mr-2" /> Pause
+                          </DropdownMenuItem>
+                        )}
+                        <DropdownMenuSeparator className="bg-white/10" />
+                        <DropdownMenuItem className="text-red-400 hover:bg-red-500/10">
+                          <Trash2 className="h-4 w-4 mr-2" /> Delete
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   </div>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="sm" className="text-gray-400">
-                        <MoreHorizontal className="h-5 w-5" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="bg-slate-900 border-white/10">
-                      <DropdownMenuItem className="text-white hover:bg-white/10">
-                        <Eye className="h-4 w-4 mr-2" /> View Details
-                      </DropdownMenuItem>
-                      <DropdownMenuItem className="text-white hover:bg-white/10">
-                        <Edit className="h-4 w-4 mr-2" /> Edit Job
-                      </DropdownMenuItem>
-                      {job.status === 'pending_approval' && (
-                        <DropdownMenuItem className="text-emerald-400 hover:bg-emerald-500/10">
-                          <CheckCircle className="h-4 w-4 mr-2" /> Approve
-                        </DropdownMenuItem>
-                      )}
-                      {job.status === 'active' && (
-                        <DropdownMenuItem className="text-orange-400 hover:bg-orange-500/10">
-                          <Pause className="h-4 w-4 mr-2" /> Pause
-                        </DropdownMenuItem>
-                      )}
-                      <DropdownMenuSeparator className="bg-white/10" />
-                      <DropdownMenuItem className="text-red-400 hover:bg-red-500/10">
-                        <Trash2 className="h-4 w-4 mr-2" /> Delete
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </div>
-              </CardContent>
-            </Card>
-          </motion.div>
-        ))}
+                </CardContent>
+              </Card>
+            </motion.div>
+          ))
+        )}
       </div>
+
+      {/* Create Job Modal */}
+      <CreateJobModal
+        isOpen={showCreateModal}
+        onClose={() => setShowCreateModal(false)}
+        onJobCreated={refreshJobs}
+      />
     </div>
   );
 }
