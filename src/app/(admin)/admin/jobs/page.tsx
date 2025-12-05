@@ -53,50 +53,35 @@ export default function JobsPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // TODO: Fetch from API
-    setJobs([
-      {
-        id: '1',
-        title: 'Senior Software Engineer',
-        company: 'TechCorp Inc.',
-        agencyId: '1',
-        agencyName: 'TechRecruit Pro',
-        location: 'San Francisco, CA',
-        salary: '$150,000 - $180,000',
-        type: 'full-time',
-        status: 'active',
-        applicantsCount: 45,
-        createdAt: '2024-01-15',
-      },
-      {
-        id: '2',
-        title: 'Product Designer',
-        company: 'StartupXYZ',
-        agencyId: '2',
-        agencyName: 'Global Talent Solutions',
-        location: 'Remote',
-        salary: '$90,000 - $120,000',
-        type: 'remote',
-        status: 'pending_approval',
-        applicantsCount: 0,
-        createdAt: '2024-03-01',
-      },
-      {
-        id: '3',
-        title: 'Marketing Manager',
-        company: 'BrandCo',
-        agencyId: '1',
-        agencyName: 'TechRecruit Pro',
-        location: 'New York, NY',
-        salary: '$80,000 - $100,000',
-        type: 'full-time',
-        status: 'paused',
-        applicantsCount: 23,
-        createdAt: '2024-02-10',
-      },
-    ]);
-    setLoading(false);
-  }, []);
+    const fetchJobs = async () => {
+      try {
+        const response = await fetch(`/api/admin/jobs?search=${searchQuery}&status=${statusFilter}`);
+        const data = await response.json();
+        
+        if (response.ok) {
+          setJobs(data.jobs.map((j: Record<string, unknown>) => ({
+            id: j.id,
+            title: j.title,
+            company: j.company || 'Unknown',
+            agencyId: j.agencyId,
+            agencyName: j.agencyName || 'Direct',
+            location: j.location || 'Remote',
+            salary: j.salary || 'Not specified',
+            type: j.type || 'full-time',
+            status: j.status || 'active',
+            applicantsCount: j.applicantsCount || 0,
+            createdAt: j.createdAt,
+          })));
+        }
+      } catch (error) {
+        console.error('Failed to fetch jobs:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchJobs();
+  }, [searchQuery, statusFilter]);
 
   const getStatusBadge = (status: Job['status']) => {
     const styles = {

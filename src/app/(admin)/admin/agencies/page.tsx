@@ -39,42 +39,33 @@ export default function AgenciesPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // TODO: Fetch from API
-    setAgencies([
-      {
-        id: '1',
-        name: 'TechRecruit Pro',
-        email: 'contact@techrecruit.com',
-        phone: '+1 234 567 8900',
-        location: 'San Francisco, CA',
-        recruitersCount: 12,
-        activeJobsCount: 34,
-        status: 'active',
-        createdAt: '2024-01-15',
-      },
-      {
-        id: '2',
-        name: 'Global Talent Solutions',
-        email: 'info@globaltalent.com',
-        location: 'New York, NY',
-        recruitersCount: 8,
-        activeJobsCount: 21,
-        status: 'active',
-        createdAt: '2024-02-20',
-      },
-      {
-        id: '3',
-        name: 'StartupHire',
-        email: 'hello@startuphire.io',
-        location: 'Austin, TX',
-        recruitersCount: 5,
-        activeJobsCount: 15,
-        status: 'pending',
-        createdAt: '2024-03-10',
-      },
-    ]);
-    setLoading(false);
-  }, []);
+    const fetchAgencies = async () => {
+      try {
+        const response = await fetch(`/api/admin/agencies?search=${searchQuery}`);
+        const data = await response.json();
+        
+        if (response.ok) {
+          setAgencies(data.agencies.map((a: Record<string, unknown>) => ({
+            id: a.id,
+            name: a.name,
+            email: a.email || '',
+            phone: a.phone || '',
+            location: a.location || 'No location',
+            recruitersCount: a.recruitersCount || 0,
+            activeJobsCount: a.activeJobsCount || 0,
+            status: a.status || 'active',
+            createdAt: a.created_at,
+          })));
+        }
+      } catch (error) {
+        console.error('Failed to fetch agencies:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchAgencies();
+  }, [searchQuery]);
 
   const getStatusBadge = (status: Agency['status']) => {
     const styles = {

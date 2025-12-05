@@ -85,26 +85,23 @@ export default function AdminDashboard() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // TODO: Fetch real stats from API
-    // For now, using placeholder data
-    setStats({
-      totalCandidates: 1247,
-      totalAgencies: 23,
-      activeJobs: 89,
-      pendingApplications: 156,
-      scheduledInterviews: 34,
-      pendingOffers: 12,
-    });
+    const fetchDashboardData = async () => {
+      try {
+        const response = await fetch('/api/admin/dashboard/stats');
+        const data = await response.json();
+        
+        if (response.ok) {
+          setStats(data.stats);
+          setRecentActivity(data.recentActivity || []);
+        }
+      } catch (error) {
+        console.error('Failed to fetch dashboard data:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
 
-    setRecentActivity([
-      { id: '1', type: 'signup', message: 'New candidate registered: john.doe@email.com', time: '2 minutes ago' },
-      { id: '2', type: 'application', message: 'Application received for Senior Developer at TechCorp', time: '15 minutes ago' },
-      { id: '3', type: 'interview', message: 'Interview scheduled: Sarah Smith for Marketing Manager', time: '1 hour ago' },
-      { id: '4', type: 'offer', message: 'Offer accepted: Mike Johnson joined DataInc', time: '2 hours ago' },
-      { id: '5', type: 'job', message: 'New job posted: Product Designer at StartupXYZ', time: '3 hours ago' },
-    ]);
-
-    setLoading(false);
+    fetchDashboardData();
   }, []);
 
   const getActivityIcon = (type: ActivityItem['type']) => {

@@ -55,44 +55,35 @@ export default function CandidatesPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // TODO: Fetch from API
-    setCandidates([
-      {
-        id: '1',
-        name: 'John Smith',
-        email: 'john.smith@email.com',
-        phone: '+1 234 567 8900',
-        location: 'San Francisco, CA',
-        hasResume: true,
-        hasAiAnalysis: true,
-        gameScores: { typing: 85, disc: 'D' },
-        status: 'active',
-        createdAt: '2024-01-15',
-      },
-      {
-        id: '2',
-        name: 'Sarah Johnson',
-        email: 'sarah.j@email.com',
-        location: 'New York, NY',
-        hasResume: true,
-        hasAiAnalysis: false,
-        gameScores: { typing: 72 },
-        status: 'active',
-        createdAt: '2024-02-20',
-      },
-      {
-        id: '3',
-        name: 'Mike Williams',
-        email: 'mike.w@email.com',
-        hasResume: false,
-        hasAiAnalysis: false,
-        gameScores: {},
-        status: 'inactive',
-        createdAt: '2024-03-10',
-      },
-    ]);
-    setLoading(false);
-  }, []);
+    const fetchCandidates = async () => {
+      try {
+        const response = await fetch(`/api/admin/candidates?search=${searchQuery}`);
+        const data = await response.json();
+        
+        if (response.ok) {
+          setCandidates(data.candidates.map((c: Record<string, unknown>) => ({
+            id: c.id,
+            name: c.name || c.email,
+            email: c.email,
+            phone: c.phone || undefined,
+            location: c.location || undefined,
+            avatar: c.avatar || undefined,
+            hasResume: c.hasResume || false,
+            hasAiAnalysis: c.hasAiAnalysis || false,
+            gameScores: c.gameScores || {},
+            status: c.status || 'active',
+            createdAt: c.createdAt,
+          })));
+        }
+      } catch (error) {
+        console.error('Failed to fetch candidates:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchCandidates();
+  }, [searchQuery]);
 
   const getStatusBadge = (status: Candidate['status']) => {
     const styles = {
