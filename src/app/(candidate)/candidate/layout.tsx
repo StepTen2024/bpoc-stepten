@@ -60,11 +60,13 @@ export default function CandidateLayout({
   async function fetchProfile(userId: string) {
     if (!userId) return
     try {
-      const response = await fetch(`/api/user/profile?userId=${userId}`)
-      if (response.ok) {
-        const data = await response.json()
-        setProfile(data.user)
-      }
+      // DISABLED: API route not available
+      // const response = await fetch(`/api/user/profile?userId=${userId}`)
+      // if (response.ok) {
+      //   const data = await response.json()
+      //   setProfile(data.user)
+      // }
+      setProfile(null)
     } catch (error) {
       console.error('Error fetching profile:', error)
     }

@@ -130,39 +130,71 @@ export default function CandidateProfilePage() {
   async function fetchProfile() {
     try {
       setLoading(true)
-      const response = await fetch(`/api/user/profile?userId=${user?.id}`)
-      if (response.ok) {
-        const data = await response.json()
-        setProfile(data.user)
-        setFormData({
-          username: data.user.username || '',
-          bio: data.user.bio || '',
-          position: data.user.position || '',
-          location: data.user.location || '',
-          location_place_id: data.user.location_place_id || '',
-          location_lat: data.user.location_lat || null,
-          location_lng: data.user.location_lng || null,
-          location_city: data.user.location_city || '',
-          location_province: data.user.location_province || '',
-          location_country: data.user.location_country || '',
-          location_barangay: data.user.location_barangay || '',
-          location_region: data.user.location_region || '',
-          birthday: data.user.birthday || '',
-          gender: data.user.gender || '',
-          gender_custom: data.user.gender_custom || '',
-          phone: data.user.phone || '',
-          work_status: data.user.work_status || '',
-          current_employer: data.user.company || data.user.current_employer || '',
-          current_position: data.user.current_position || '',
-          current_salary: data.user.current_salary ? String(data.user.current_salary) : '',
-          expected_salary_min: data.user.expected_salary_min ? String(data.user.expected_salary_min) : '',
-          expected_salary_max: data.user.expected_salary_max ? String(data.user.expected_salary_max) : '',
-          notice_period_days: data.user.notice_period_days ? String(data.user.notice_period_days) : '',
-          preferred_shift: data.user.preferred_shift || '',
-          preferred_work_setup: data.user.preferred_work_setup || '',
-          current_mood: data.user.current_mood || '',
-        })
-      }
+      // DISABLED: API route not available
+      // const response = await fetch(`/api/user/profile?userId=${user?.id}`)
+      // if (response.ok) {
+      //   const data = await response.json()
+      //   setProfile(data.user)
+      //   setFormData({
+      //     username: data.user.username || '',
+      //     bio: data.user.bio || '',
+      //     position: data.user.position || '',
+      //     location: data.user.location || '',
+      //     location_place_id: data.user.location_place_id || '',
+      //     location_lat: data.user.location_lat || null,
+      //     location_lng: data.user.location_lng || null,
+      //     location_city: data.user.location_city || '',
+      //     location_province: data.user.location_province || '',
+      //     location_country: data.user.location_country || '',
+      //     location_barangay: data.user.location_barangay || '',
+      //     location_region: data.user.location_region || '',
+      //     birthday: data.user.birthday || '',
+      //     gender: data.user.gender || '',
+      //     gender_custom: data.user.gender_custom || '',
+      //     phone: data.user.phone || '',
+      //     work_status: data.user.work_status || '',
+      //     current_employer: data.user.company || data.user.current_employer || '',
+      //     current_position: data.user.current_position || '',
+      //     current_salary: data.user.current_salary ? String(data.user.current_salary) : '',
+      //     expected_salary_min: data.user.expected_salary_min ? String(data.user.expected_salary_min) : '',
+      //     expected_salary_max: data.user.expected_salary_max ? String(data.user.expected_salary_max) : '',
+      //     notice_period_days: data.user.notice_period_days ? String(data.user.notice_period_days) : '',
+      //     preferred_shift: data.user.preferred_shift || '',
+      //     preferred_work_setup: data.user.preferred_work_setup || '',
+      //     current_mood: data.user.current_mood || '',
+      //   })
+      // }
+      
+      // Set empty defaults instead
+      setProfile(null)
+      setFormData({
+        username: '',
+        bio: '',
+        position: '',
+        location: '',
+        location_place_id: '',
+        location_lat: null,
+        location_lng: null,
+        location_city: '',
+        location_province: '',
+        location_country: '',
+        location_barangay: '',
+        location_region: '',
+        birthday: '',
+        gender: '',
+        gender_custom: '',
+        phone: '',
+        work_status: '',
+        current_employer: '',
+        current_position: '',
+        current_salary: '',
+        expected_salary_min: '',
+        expected_salary_max: '',
+        notice_period_days: '',
+        preferred_shift: '',
+        preferred_work_setup: '',
+        current_mood: '',
+      })
     } catch (error) {
       console.error('Error fetching profile:', error)
       toast({
@@ -284,7 +316,7 @@ export default function CandidateProfilePage() {
         notice_period_days: formData.notice_period_days ? parseInt(formData.notice_period_days) : null,
         preferred_shift: formData.preferred_shift || null,
         preferred_work_setup: formData.preferred_work_setup || null,
-        current_mood: formData.current_mood || null,
+        current_mood: formData.current_mood === 'prefer_not_to_say' ? null : (formData.current_mood || null),
         profile_completed: true, // Mark as completed when saved
       }
       
@@ -316,7 +348,8 @@ export default function CandidateProfilePage() {
           title: 'Profile updated',
           description: 'Your profile has been saved successfully.',
         })
-        fetchProfile()
+        // DISABLED: fetchProfile() - API route not available
+        // fetchProfile()
     } catch (error) {
       console.error('Error saving profile:', error)
       toast({
@@ -625,12 +658,12 @@ export default function CandidateProfilePage() {
                 <Label htmlFor="current_mood" className={cn(labelClass, "mb-1.5 block")}>
                   Current Mood <span className="text-xs text-gray-500">(Optional)</span>
                 </Label>
-                <Select value={formData.current_mood} onValueChange={(value) => handleInputChange('current_mood', value)}>
+                <Select value={formData.current_mood || undefined} onValueChange={(value) => handleInputChange('current_mood', value)}>
                   <SelectTrigger className={inputClass}>
                     <SelectValue placeholder="Select your mood" />
                   </SelectTrigger>
                   <SelectContent className="bg-[#1a1a1d] border-white/10 text-white">
-                    <SelectItem value="">Prefer not to say</SelectItem>
+                    <SelectItem value="prefer_not_to_say">Prefer not to say</SelectItem>
                     {MOOD_OPTIONS.map((option) => (
                       <SelectItem key={option.value} value={option.value}>
                         {option.icon} {option.label}
