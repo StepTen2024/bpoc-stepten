@@ -41,8 +41,8 @@ import {
 } from '@/components/shared/ui/alert-dialog'
 
 import { cn } from '@/lib/utils'
-import LoginForm from '@/components/auth/LoginForm'
-import SignUpForm from '@/components/auth/SignUpForm'
+import LoginForm from '@/components/shared/auth/LoginForm'
+import SignUpForm from '@/components/shared/auth/SignUpForm'
 
 import { useAuth } from '@/contexts/AuthContext'
 import { useAdmin } from '@/contexts/AdminContext'
