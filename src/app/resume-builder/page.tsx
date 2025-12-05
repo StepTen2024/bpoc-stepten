@@ -1495,6 +1495,7 @@ export default function ResumeBuilderPage() {
                         </Button>
                       </div>
                     </div>
+                    </div>
                   </div>
                 </div>
               </motion.div>
