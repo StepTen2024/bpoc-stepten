@@ -250,7 +250,8 @@ export default function ResumeBuilderPage() {
           return;
         }
 
-        // 1. Check saved_resumes (highest priority - redirect to resume page)
+        // Check for existing data but DON'T redirect - let user choose
+        // 1. Check saved_resumes (show option to continue)
         const savedResumeRes = await fetch('/api/user/saved-resumes', {
           headers: {
             Authorization: `Bearer ${sessionToken}`,
@@ -264,12 +265,11 @@ export default function ResumeBuilderPage() {
         try { savedResumeData = JSON.parse(savedResumeText); } catch {}
 
         if (savedResumeRes.ok && savedResumeData?.success && savedResumeData?.hasSavedResume && savedResumeData?.resumeSlug) {
-          console.log('✅ User has saved resume, redirecting to:', savedResumeData.resumeSlug);
-          router.push(`/resume/${savedResumeData.resumeSlug}`);
-          return;
+          console.log('✅ User has saved resume - showing option to continue');
+          // Don't redirect - let them choose to start new or continue
         }
 
-        // 2. Check resumes_generated (redirect to build page with preview)
+        // 2. Check resumes_generated (show option to continue)
         const generatedResumeRes = await fetch('/api/user/resumes-generated', {
           headers: {
             Authorization: `Bearer ${sessionToken}`,
@@ -289,7 +289,7 @@ export default function ResumeBuilderPage() {
           return;
         }
 
-        // 3. Check ai_analysis_results (redirect to analysis page)
+        // 3. Check ai_analysis_results (show option to continue)
         const analysisRes = await fetch('/api/user/analysis-results', {
           headers: { Authorization: `Bearer ${sessionToken}` },
           cache: 'no-store'
@@ -1228,22 +1228,29 @@ export default function ResumeBuilderPage() {
         </DialogContent>
       </Dialog>
       
-      <div className="pt-16 relative z-10">
-        <div className="container mx-auto px-4 py-8">
-          {/* Header */}
+      {/* Background Ambience - Style Guide Orbs */}
+      <div className="fixed inset-0 overflow-hidden pointer-events-none z-0">
+        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-cyan-500/10 rounded-full blur-[120px] opacity-20 animate-pulse"></div>
+        <div className="absolute bottom-1/3 right-1/4 w-80 h-80 bg-purple-500/10 rounded-full blur-[120px] opacity-20 animate-pulse" style={{ animationDelay: '1s' }}></div>
+        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-emerald-500/5 rounded-full blur-[120px] opacity-20"></div>
+      </div>
+
+      <div className="relative z-10 min-h-screen bg-[#0B0B0D]">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-20">
+          {/* Header - Style Guide Typography */}
           <motion.div
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="text-center mb-8"
+            className="text-center mb-12"
           >
             <div className="flex items-center justify-center mb-6">
               <Sparkles className="h-12 w-12 text-cyan-400 mr-4" />
-              <h1 className="text-4xl md:text-5xl font-bold text-white">
+              <h1 className="text-5xl md:text-6xl font-bold bg-gradient-to-r from-cyan-400 via-purple-400 to-emerald-400 bg-clip-text text-transparent tracking-tight">
                 AI Powered Resume Builder
               </h1>
             </div>
             <p className="text-lg text-gray-300 max-w-2xl mx-auto">
-              Upload your current resume and we’ll use AI to analyze it, extract your data, and generate a new, improved version.
+              Upload your current resume and we'll use AI to analyze it, extract your data, and generate a new, improved version.
             </p>
           </motion.div>
 
@@ -1259,24 +1266,30 @@ export default function ResumeBuilderPage() {
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: 0.2 }}
               >
-                <Card className="glass-card border-white/10 h-full">
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2 text-white">
-                      <Upload className="h-5 w-5 text-cyan-400" />
-                      Upload Files
-                    </CardTitle>
-                    <CardDescription className="text-gray-300">
-                      Resume • Certificates • Work Samples
-                      <br />
-                      <span className="text-cyan-400">PDF, DOC, DOCX, JPG, PNG</span>
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    {/* Drop Zone */}
+                {/* Style Guide Glass Card */}
+                <div className="relative group overflow-hidden rounded-xl border border-white/10 bg-white/5 backdrop-blur-xl transition-all duration-300 hover:border-white/20 hover:bg-white/10 hover:shadow-2xl hover:shadow-cyan-500/20 h-full">
+                  {/* Inner Glow Gradient */}
+                  <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/10 via-transparent to-purple-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                  
+                  {/* Content */}
+                  <div className="relative z-10 p-6">
+                    <div className="mb-4">
+                      <h3 className="flex items-center gap-2 text-xl font-bold text-white mb-2">
+                        <Upload className="h-5 w-5 text-cyan-400" />
+                        Upload Files
+                      </h3>
+                      <p className="text-gray-300 text-sm">
+                        Resume • Certificates • Work Samples
+                        <br />
+                        <span className="text-cyan-400">PDF, DOC, DOCX, JPG, PNG</span>
+                      </p>
+                    </div>
+                    
+                    {/* Drop Zone - Style Guide */}
                     <div
                       className={`relative p-8 border-2 border-dashed rounded-xl transition-all duration-300 cursor-pointer ${
                         dragActive 
-                          ? 'border-cyan-400 bg-cyan-400/5' 
+                          ? 'border-cyan-400 bg-cyan-400/10 shadow-lg shadow-cyan-500/25' 
                           : 'border-white/20 hover:border-cyan-400/50 hover:bg-cyan-400/5'
                       }`}
                       onDragEnter={handleDrag}
@@ -1293,7 +1306,10 @@ export default function ResumeBuilderPage() {
                         <p className="text-gray-400 mb-4">
                           or click to browse files
                         </p>
-                        <Button variant="outline" className="border-cyan-400/30 text-cyan-400 hover:bg-cyan-400/10">
+                        <Button 
+                          variant="outline" 
+                          className="border-white/10 bg-white/5 text-white hover:bg-white/10 hover:border-white/20 backdrop-blur-md"
+                        >
                           Browse Files
                         </Button>
                       </div>
@@ -1349,8 +1365,8 @@ export default function ResumeBuilderPage() {
                         </div>
                       </div>
                     )}
-                  </CardContent>
-                </Card>
+                  </div>
+                </div>
               </motion.div>
 
               {/* Portfolio Links Section */}
@@ -1359,17 +1375,24 @@ export default function ResumeBuilderPage() {
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: 0.4 }}
               >
-                <Card className="glass-card border-white/10 h-full">
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2 text-white">
-                      <ExternalLink className="h-5 w-5 text-purple-400" />
-                      Portfolio Links
-                    </CardTitle>
-                    <CardDescription className="text-gray-300">
-                      <span className="text-purple-400">LinkedIn • GitHub • Personal Website • Portfolio</span>
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
+                {/* Style Guide Glass Card */}
+                <div className="relative group overflow-hidden rounded-xl border border-white/10 bg-white/5 backdrop-blur-xl transition-all duration-300 hover:border-white/20 hover:bg-white/10 hover:shadow-2xl hover:shadow-purple-500/20 h-full">
+                  {/* Inner Glow Gradient */}
+                  <div className="absolute inset-0 bg-gradient-to-br from-purple-500/10 via-transparent to-pink-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                  
+                  {/* Content */}
+                  <div className="relative z-10 p-6">
+                    <div className="mb-4">
+                      <h3 className="flex items-center gap-2 text-xl font-bold text-white mb-2">
+                        <ExternalLink className="h-5 w-5 text-purple-400" />
+                        Portfolio Links
+                      </h3>
+                      <p className="text-gray-300 text-sm">
+                        <span className="text-purple-400">LinkedIn • GitHub • Personal Website • Portfolio</span>
+                      </p>
+                    </div>
+                    
+                    <div className="space-y-4">
                     {/* Add Link Input */}
                     <div className="flex gap-2">
                       <input
