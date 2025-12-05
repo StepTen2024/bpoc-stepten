@@ -7,34 +7,38 @@ export async function GET(request: NextRequest) {
     const search = searchParams.get('search') || '';
     const status = searchParams.get('status') || '';
 
-    // Fetch jobs with agency and company info
+    // Fetch jobs with agency_client -> agency and company info
     let query = supabaseAdmin
       .from('jobs')
       .select(`
         id,
         title,
         slug,
+        description,
         status,
         work_type,
         work_arrangement,
         salary_min,
         salary_max,
-        salary_currency,
-        location,
+        currency,
+        industry,
         created_at,
-        agencies (
+        agency_client:agency_clients (
           id,
-          name
-        ),
-        companies (
-          id,
-          name
+          agency:agencies (
+            id,
+            name
+          ),
+          company:companies (
+            id,
+            name
+          )
         )
       `)
       .order('created_at', { ascending: false });
 
     if (search) {
-      query = query.or(`title.ilike.%${search}%`);
+      query = query.ilike('title', `%${search}%`);
     }
 
     if (status && status !== 'all') {
@@ -52,29 +56,32 @@ export async function GET(request: NextRequest) {
     const jobsWithCounts = await Promise.all(
       (jobs || []).map(async (job) => {
         const { count } = await supabaseAdmin
-          .from('applications')
+          .from('job_applications')
           .select('id', { count: 'exact', head: true })
           .eq('job_id', job.id);
 
         // Format salary
         let salary = 'Not specified';
         if (job.salary_min && job.salary_max) {
-          const currency = job.salary_currency || 'USD';
+          const currency = job.currency || 'PHP';
           salary = `${currency} ${job.salary_min.toLocaleString()} - ${job.salary_max.toLocaleString()}`;
         } else if (job.salary_min) {
-          salary = `${job.salary_currency || 'USD'} ${job.salary_min.toLocaleString()}+`;
+          salary = `${job.currency || 'PHP'} ${job.salary_min.toLocaleString()}+`;
         }
+
+        // Extract nested data
+        const agencyClient = job.agency_client as { agency?: { id: string; name: string }; company?: { id: string; name: string } } | null;
 
         return {
           id: job.id,
           title: job.title,
           slug: job.slug,
-          company: job.companies?.name || 'Unknown Company',
-          agencyId: job.agencies?.id,
-          agencyName: job.agencies?.name || 'Direct Hire',
-          location: job.location || 'Remote',
+          company: agencyClient?.company?.name || 'ShoreAgents Client',
+          agencyId: agencyClient?.agency?.id || null,
+          agencyName: agencyClient?.agency?.name || 'ShoreAgents',
+          location: job.industry || 'Remote',
           salary,
-          type: job.work_type || 'full-time',
+          type: job.work_type || 'full_time',
           arrangement: job.work_arrangement || 'remote',
           status: job.status,
           applicantsCount: count || 0,
