@@ -510,16 +510,11 @@ export default function CandidateProfilePage() {
       const profileResult = await profileResponse.json()
       console.log('✅ Profile saved successfully:', profileResult)
       
-      // Reload profile data to ensure UI is in sync
-      await fetchProfile()
-      
-      // Exit edit mode after successful save
+      // Exit edit mode first
       setIsEditing(false)
       
-      toast({
-        title: 'Profile updated',
-        description: 'Your profile has been saved successfully.',
-      })
+      // Reload profile data to ensure UI is in sync
+      await fetchProfile()
       
       toast({
         title: 'Profile updated',
@@ -533,6 +528,7 @@ export default function CandidateProfilePage() {
         description: `Failed to update profile: ${errorMessage}`,
         variant: 'destructive',
       })
+      // Don't exit edit mode on error - let user try again
     } finally {
       setSaving(false)
     }
