@@ -139,42 +139,47 @@ export default function CandidateProfilePage() {
       const candidateRes = await fetch(`/api/candidates/${user?.id}`)
       if (candidateRes.ok) {
         const { candidate, profile: candidateProfile } = await candidateRes.json()
+        console.log('📸 Fetched avatar_url:', candidate.avatar_url)
         setAvatarUrl(candidate.avatar_url)
         
         // Also fetch full profile for other data
         const response = await fetch(`/api/user/profile?userId=${user?.id}`)
+        let profileData = null
         if (response.ok) {
           const data = await response.json()
-          setProfile(data.user)
+          profileData = data.user
+          setProfile(profileData)
         }
         
+        // Use profileData if available, otherwise use candidateProfile or empty defaults
+        const userData = profileData || candidateProfile || {}
         setFormData({
-          username: data.user.username || '',
-          bio: data.user.bio || '',
-          position: data.user.position || '',
-          location: data.user.location || '',
-          location_place_id: data.user.location_place_id || '',
-          location_lat: data.user.location_lat || null,
-          location_lng: data.user.location_lng || null,
-          location_city: data.user.location_city || '',
-          location_province: data.user.location_province || '',
-          location_country: data.user.location_country || '',
-          location_barangay: data.user.location_barangay || '',
-          location_region: data.user.location_region || '',
-          birthday: data.user.birthday || '',
-          gender: data.user.gender || '',
-          gender_custom: data.user.gender_custom || '',
-          phone: data.user.phone || '',
-          work_status: data.user.work_status || '',
-          current_employer: data.user.company || data.user.current_employer || '',
-          current_position: data.user.current_position || '',
-          current_salary: data.user.current_salary ? String(data.user.current_salary) : '',
-          expected_salary_min: data.user.expected_salary_min ? String(data.user.expected_salary_min) : '',
-          expected_salary_max: data.user.expected_salary_max ? String(data.user.expected_salary_max) : '',
-          notice_period_days: data.user.notice_period_days ? String(data.user.notice_period_days) : '',
-          preferred_shift: data.user.preferred_shift || '',
-          preferred_work_setup: data.user.preferred_work_setup || '',
-          current_mood: data.user.current_mood || 'prefer_not_to_say',
+          username: candidate.username || userData.username || '',
+          bio: userData.bio || '',
+          position: userData.position || '',
+          location: userData.location || '',
+          location_place_id: userData.location_place_id || '',
+          location_lat: userData.location_lat || null,
+          location_lng: userData.location_lng || null,
+          location_city: userData.location_city || '',
+          location_province: userData.location_province || '',
+          location_country: userData.location_country || '',
+          location_barangay: userData.location_barangay || '',
+          location_region: userData.location_region || '',
+          birthday: userData.birthday || '',
+          gender: userData.gender || '',
+          gender_custom: userData.gender_custom || '',
+          phone: candidate.phone || userData.phone || '',
+          work_status: userData.work_status || '',
+          current_employer: userData.company || userData.current_employer || '',
+          current_position: userData.current_position || '',
+          current_salary: userData.current_salary ? String(userData.current_salary) : '',
+          expected_salary_min: userData.expected_salary_min ? String(userData.expected_salary_min) : '',
+          expected_salary_max: userData.expected_salary_max ? String(userData.expected_salary_max) : '',
+          notice_period_days: userData.notice_period_days ? String(userData.notice_period_days) : '',
+          preferred_shift: userData.preferred_shift || '',
+          preferred_work_setup: userData.preferred_work_setup || '',
+          current_mood: userData.current_mood || 'prefer_not_to_say',
         })
       }
     } catch (error) {
@@ -264,7 +269,7 @@ export default function CandidateProfilePage() {
 
       // Update local state
       setAvatarUrl(publicUrl)
-      console.log('✅ Profile photo updated successfully')
+      console.log('✅ Profile photo updated successfully, avatarUrl set to:', publicUrl)
 
       toast({
         title: 'Photo uploaded',
@@ -273,6 +278,11 @@ export default function CandidateProfilePage() {
 
       // Trigger header update if needed
       window.dispatchEvent(new CustomEvent('profileUpdated'))
+      
+      // Refresh profile to ensure everything is in sync
+      setTimeout(() => {
+        fetchProfile()
+      }, 500)
 
     } catch (error) {
       console.error('❌ Photo upload failed:', error)
@@ -502,6 +512,11 @@ export default function CandidateProfilePage() {
                     alt="Profile Avatar"
                     fill
                     className="object-cover rounded-full"
+                    unoptimized
+                    onError={(e) => {
+                      console.error('Image load error:', e)
+                      setAvatarUrl(null)
+                    }}
                   />
                 ) : (
                   <User className="w-full h-full text-gray-500 p-4 bg-gray-800 rounded-full" />

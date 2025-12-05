@@ -11,6 +11,19 @@ const nextConfig: NextConfig = {
   experimental: {
     esmExternals: true,
   },
+  // Configure images to allow Supabase storage domains
+  images: {
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: '**.supabase.co',
+      },
+      {
+        protocol: 'https',
+        hostname: '**.supabase.in',
+      },
+    ],
+  },
   // Exclude puppeteer packages from serverless bundle to avoid size limits
   serverExternalPackages: ['puppeteer-core', '@sparticuz/chromium'],
   // Webpack config to exclude problematic imports
