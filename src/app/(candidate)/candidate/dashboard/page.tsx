@@ -50,6 +50,7 @@ export default function CandidateDashboardPage() {
   const [loadingStats, setLoadingStats] = useState(true)
   const [showProfileModal, setShowProfileModal] = useState(false)
   const [checkingAuth, setCheckingAuth] = useState(true)
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null)
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -62,9 +63,10 @@ export default function CandidateDashboardPage() {
       // If AuthContext has a user, use it
       if (user) {
         console.log('✅ User found in AuthContext:', user.email)
+        setCurrentUserId(user.id)
         setCheckingAuth(false)
-        fetchProfile()
-        fetchStats()
+        fetchProfile(user.id)
+        fetchStats(user.id)
         return
       }
 
@@ -75,19 +77,20 @@ export default function CandidateDashboardPage() {
         
         if (error) {
           console.error('❌ Error checking session:', error)
-          router.push('/')
-          return
+          // Only redirect if there's a real error, not just missing session
+          if (error.message && !error.message.includes('session')) {
+            router.push('/')
+            return
+          }
         }
 
         if (session?.user) {
           console.log('✅ Session found directly from Supabase:', session.user.email)
-          // Session exists, wait a moment for AuthContext to catch up
-          // Don't redirect - let AuthContext update naturally
-          setTimeout(() => {
-            setCheckingAuth(false)
-            fetchProfile()
-            fetchStats()
-          }, 500)
+          setCurrentUserId(session.user.id)
+          // Session exists - load data immediately, don't wait
+          setCheckingAuth(false)
+          fetchProfile(session.user.id)
+          fetchStats(session.user.id)
           return
         }
 
@@ -96,16 +99,17 @@ export default function CandidateDashboardPage() {
         router.push('/')
       } catch (error) {
         console.error('❌ Error in auth check:', error)
-        router.push('/')
+        // Don't redirect on catch - let it retry
       }
     }
 
     checkAuth()
   }, [user, loading, router])
 
-  async function fetchProfile() {
+  async function fetchProfile(userId: string) {
+    if (!userId) return
     try {
-      const response = await fetch(`/api/user/profile?userId=${user?.id}`)
+      const response = await fetch(`/api/user/profile?userId=${userId}`)
       if (response.ok) {
         const data = await response.json()
         setProfile(data.user)
@@ -115,12 +119,13 @@ export default function CandidateDashboardPage() {
     }
   }
 
-  async function fetchStats() {
+  async function fetchStats(userId: string) {
+    if (!userId) return
     try {
       setLoadingStats(true)
       
       // Fetch profile completion
-      const profileRes = await fetch(`/api/user/profile?userId=${user?.id}`)
+      const profileRes = await fetch(`/api/user/profile?userId=${userId}`)
       const profileData = profileRes.ok ? await profileRes.json() : null
       
       // Fetch resume status
