@@ -513,8 +513,13 @@ export default function CandidateProfilePage() {
       // Exit edit mode first
       setIsEditing(false)
       
-      // Reload profile data to ensure UI is in sync
-      await fetchProfile()
+      // Reload profile data to ensure UI is in sync (don't let this block the save completion)
+      try {
+        await fetchProfile()
+      } catch (fetchError) {
+        console.error('⚠️ Error reloading profile after save (non-critical):', fetchError)
+        // Don't throw - save was successful, just reload failed
+      }
       
       toast({
         title: 'Profile updated',
@@ -530,6 +535,7 @@ export default function CandidateProfilePage() {
       })
       // Don't exit edit mode on error - let user try again
     } finally {
+      // Always reset saving state, even if something goes wrong
       setSaving(false)
     }
   }
