@@ -8,7 +8,7 @@ import { Label } from '@/components/shared/ui/label'
 import { Textarea } from '@/components/shared/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/shared/ui/select'
 import { useToast } from '@/hooks/use-toast'
-import { User, MapPin, Phone, Briefcase, FileText, Loader2, CheckCircle, X, Info, Sparkles, Camera } from 'lucide-react'
+import { User, MapPin, Phone, Briefcase, FileText, Loader2, CheckCircle, X, Info, Sparkles, Camera, Edit, XCircle } from 'lucide-react'
 import Image from 'next/image'
 import { uploadProfilePhoto, optimizeImage } from '@/lib/storage'
 import {
@@ -52,6 +52,7 @@ export default function CandidateProfilePage() {
   const { toast } = useToast()
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
+  const [isEditing, setIsEditing] = useState(false)
   const [profile, setProfile] = useState<any>(null)
   const [usernameChecking, setUsernameChecking] = useState(false)
   const [usernameAvailable, setUsernameAvailable] = useState<boolean | null>(null)
@@ -516,6 +517,14 @@ export default function CandidateProfilePage() {
       
       // Reload profile data to ensure UI is in sync
       await fetchProfile()
+      
+      // Exit edit mode after successful save
+      setIsEditing(false)
+      
+      toast({
+        title: 'Profile updated',
+        description: 'Your profile has been saved successfully.',
+      })
     } catch (error) {
       console.error('❌ Error saving profile:', error)
       const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred'
@@ -527,6 +536,16 @@ export default function CandidateProfilePage() {
     } finally {
       setSaving(false)
     }
+  }
+
+  const handleEdit = () => {
+    setIsEditing(true)
+  }
+
+  const handleCancel = () => {
+    setIsEditing(false)
+    // Reload profile to reset any unsaved changes
+    fetchProfile()
   }
 
   if (loading) {
@@ -542,6 +561,8 @@ export default function CandidateProfilePage() {
 
   const inputClass = "bg-white/5 border-white/10 text-white placeholder:text-gray-500 focus:border-cyan-500/50 focus:ring-cyan-500/20 transition-all"
   const labelClass = "text-gray-300"
+  const isProfileCompleted = profile?.profile_completed || false
+  const shouldDisableFields = !isEditing && isProfileCompleted
 
   return (
     <TooltipProvider>
@@ -550,30 +571,60 @@ export default function CandidateProfilePage() {
         <div className="flex flex-col md:flex-row justify-between gap-4">
           <div>
             <h1 className="text-3xl font-bold text-white">
-              Complete Your Profile
+              {isEditing ? 'Edit Your Profile' : profile?.profile_completed ? 'Your Profile' : 'Complete Your Profile'}
             </h1>
             <p className="text-gray-400 mt-1">
-              Fill in your details to unlock better job matches and opportunities
+              {isEditing 
+                ? 'Make changes to your profile information'
+                : profile?.profile_completed 
+                  ? 'View and manage your profile information'
+                  : 'Fill in your details to unlock better job matches and opportunities'}
             </p>
           </div>
-          <Button 
-            onClick={handleSave} 
-            disabled={saving} 
-            size="lg" 
-            className="bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white shadow-lg shadow-cyan-500/25 transition-all hover:scale-105"
-          >
-            {saving ? (
+          <div className="flex gap-2">
+            {isEditing ? (
               <>
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                Saving...
+                <Button 
+                  onClick={handleCancel} 
+                  disabled={saving} 
+                  size="lg" 
+                  variant="outline"
+                  className="border-gray-600 text-gray-300 hover:bg-gray-800"
+                >
+                  <XCircle className="w-4 h-4 mr-2" />
+                  Cancel
+                </Button>
+                <Button 
+                  onClick={handleSave} 
+                  disabled={saving} 
+                  size="lg" 
+                  className="bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white shadow-lg shadow-cyan-500/25 transition-all hover:scale-105"
+                >
+                  {saving ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Saving...
+                    </>
+                  ) : (
+                    <>
+                      <CheckCircle className="w-4 h-4 mr-2" />
+                      Save Changes
+                    </>
+                  )}
+                </Button>
               </>
             ) : (
-              <>
-                <CheckCircle className="w-4 h-4 mr-2" />
-                Save Profile
-              </>
+              <Button 
+                onClick={handleEdit} 
+                disabled={loading || saving} 
+                size="lg" 
+                className="bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white shadow-lg shadow-cyan-500/25 transition-all hover:scale-105"
+              >
+                <Edit className="w-4 h-4 mr-2" />
+                {profile?.profile_completed ? 'Edit Profile' : 'Save Profile'}
+              </Button>
             )}
-          </Button>
+          </div>
         </div>
 
         {/* Info Banner */}
@@ -689,6 +740,7 @@ export default function CandidateProfilePage() {
                     placeholder="e.g., john_doe123"
                     className={cn(inputClass, "pl-10")}
                     maxLength={20}
+                    disabled={shouldDisableFields}
                   />
                   {usernameChecking && (
                     <Loader2 className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400 animate-spin" />
@@ -716,7 +768,7 @@ export default function CandidateProfilePage() {
                 <Label htmlFor="gender" className={cn(labelClass, "mb-1.5 block")}>
                   Gender <span className="text-red-400">*</span>
                 </Label>
-                <Select value={formData.gender} onValueChange={(value) => handleInputChange('gender', value)}>
+                <Select value={formData.gender} onValueChange={(value) => handleInputChange('gender', value)} disabled={shouldDisableFields}>
                   <SelectTrigger className={inputClass}>
                     <SelectValue placeholder="Select your gender" />
                   </SelectTrigger>
@@ -732,6 +784,7 @@ export default function CandidateProfilePage() {
                     placeholder="Please specify your gender"
                     value={formData.gender_custom}
                     onChange={(e) => handleInputChange('gender_custom', e.target.value)}
+                    disabled={shouldDisableFields}
                   />
                 )}
               </div>
@@ -749,6 +802,7 @@ export default function CandidateProfilePage() {
                     onChange={(e) => handleInputChange('location', e.target.value)}
                     placeholder="Type city, province, municipality, or barangay"
                     className={cn(inputClass, "pl-10")}
+                    disabled={shouldDisableFields}
                   />
                 </div>
               </div>
@@ -770,14 +824,15 @@ export default function CandidateProfilePage() {
               </div>
                 <div className="relative">
                   <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-500" />
-                <Input
+                  <Input
                   id="phone"
                     type="tel"
                   value={formData.phone}
                     onChange={(e) => handleInputChange('phone', e.target.value)}
                     placeholder="e.g., +63 912 345 6789"
                     className={cn(inputClass, "pl-10")}
-                />
+                    disabled={shouldDisableFields}
+                  />
                 </div>
               </div>
 
@@ -813,6 +868,7 @@ export default function CandidateProfilePage() {
                     onChange={(e) => handleInputChange('position', e.target.value)}
                     placeholder="e.g., Customer Service Representative"
                     className={cn(inputClass, "pl-10")}
+                    disabled={shouldDisableFields}
                   />
                 </div>
               </div>
@@ -832,6 +888,7 @@ export default function CandidateProfilePage() {
                     placeholder="Tell us about yourself, your experience, and career goals..."
                     className={cn(inputClass, "pl-10")}
                     maxLength={500}
+                    disabled={shouldDisableFields}
                   />
                 </div>
                 <div className="flex items-center justify-between mt-1">
@@ -866,7 +923,7 @@ export default function CandidateProfilePage() {
                 <Label htmlFor="work_status" className={cn(labelClass, "mb-1.5 block")}>
                   Work Status <span className="text-red-400">*</span>
                 </Label>
-                <Select value={formData.work_status} onValueChange={(value) => handleInputChange('work_status', value)}>
+                <Select value={formData.work_status} onValueChange={(value) => handleInputChange('work_status', value)} disabled={shouldDisableFields}>
                   <SelectTrigger className={inputClass}>
                     <SelectValue placeholder="Select your work status" />
                   </SelectTrigger>
@@ -885,7 +942,7 @@ export default function CandidateProfilePage() {
                 <Label htmlFor="current_mood" className={cn(labelClass, "mb-1.5 block")}>
                   Current Mood <span className="text-xs text-gray-500">(Optional)</span>
                 </Label>
-                <Select value={formData.current_mood} onValueChange={(value) => handleInputChange('current_mood', value)}>
+                <Select value={formData.current_mood} onValueChange={(value) => handleInputChange('current_mood', value)} disabled={shouldDisableFields}>
                   <SelectTrigger className={inputClass}>
                     <SelectValue placeholder="Select your mood" />
                   </SelectTrigger>
@@ -911,6 +968,7 @@ export default function CandidateProfilePage() {
                   onChange={(e) => handleInputChange('current_employer', e.target.value)}
                   placeholder={getFieldPlaceholder('current_employer')}
                   className={inputClass}
+                  disabled={shouldDisableFields}
                 />
               </div>
 
@@ -925,6 +983,7 @@ export default function CandidateProfilePage() {
                   onChange={(e) => handleInputChange('current_position', e.target.value)}
                   placeholder="e.g., Customer Service Representative"
                   className={inputClass}
+                  disabled={shouldDisableFields}
                 />
               </div>
 
@@ -950,6 +1009,7 @@ export default function CandidateProfilePage() {
                   onChange={(e) => handleInputChange('current_salary', e.target.value)}
                   placeholder={getFieldPlaceholder('current_salary')}
                   className={inputClass}
+                  disabled={shouldDisableFields}
                 />
               </div>
 
@@ -975,6 +1035,7 @@ export default function CandidateProfilePage() {
                     value={formData.expected_salary_min}
                     onChange={(e) => handleInputChange('expected_salary_min', e.target.value)}
                     className={inputClass}
+                    disabled={shouldDisableFields}
                   />
                   <span className="text-gray-500 font-medium">-</span>
                   <Input
@@ -983,6 +1044,7 @@ export default function CandidateProfilePage() {
                     value={formData.expected_salary_max}
                     onChange={(e) => handleInputChange('expected_salary_max', e.target.value)}
                     className={inputClass}
+                    disabled={shouldDisableFields}
                   />
                 </div>
               </div>
@@ -1009,6 +1071,7 @@ export default function CandidateProfilePage() {
                   onChange={(e) => handleInputChange('notice_period_days', e.target.value)}
                   placeholder={getFieldPlaceholder('notice_period_days')}
                   className={inputClass}
+                  disabled={shouldDisableFields}
                 />
               </div>
 
@@ -1017,7 +1080,7 @@ export default function CandidateProfilePage() {
                 <Label htmlFor="preferred_shift" className={cn(labelClass, "mb-1.5 block")}>
                   Preferred Shift <span className="text-red-400">*</span>
                 </Label>
-                <Select value={formData.preferred_shift} onValueChange={(value) => handleInputChange('preferred_shift', value)}>
+                <Select value={formData.preferred_shift} onValueChange={(value) => handleInputChange('preferred_shift', value)} disabled={shouldDisableFields}>
                   <SelectTrigger className={inputClass}>
                     <SelectValue placeholder="Select preferred shift" />
                   </SelectTrigger>
