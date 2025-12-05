@@ -2178,11 +2178,11 @@ export default function ResumeBuilderPage() {
             <h2 className="text-2xl font-bold text-white mb-4">Error</h2>
             <p className="text-gray-300 mb-6">{error}</p>
             <Button
-              onClick={() => router.push('/resume-builder')}
+              onClick={() => router.push('/candidate/dashboard')}
               className="bg-blue-600 hover:bg-blue-700"
             >
               <ArrowLeft className="h-4 w-4 mr-2" />
-              Back to Resume Upload
+              Back to Dashboard
             </Button>
           </div>
         </div>
