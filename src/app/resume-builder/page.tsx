@@ -1555,7 +1555,7 @@ export default function ResumeBuilderPage() {
                         <Button
                           onClick={processUploadedFiles}
                           disabled={uploadedFiles.length === 0 || Object.keys(processingStatus).some(key => processingStatus[key] === 'processing')}
-                          className="bg-gradient-to-r from-cyan-500 to-purple-600 hover:from-cyan-600 hover:to-purple-700 text-white px-8 py-3 shadow-lg shadow-cyan-500/25"
+                          className="relative overflow-hidden rounded-lg bg-gradient-to-r from-cyan-500 to-blue-600 text-white shadow-lg shadow-cyan-500/25 transition-all hover:scale-105 hover:shadow-cyan-500/40 px-8 py-3"
                         >
                           <Sparkles className="mr-2 h-5 w-5" />
                           Begin Resume Extraction
@@ -1573,7 +1573,7 @@ export default function ResumeBuilderPage() {
                                 key={fileName} 
                                 initial={{ opacity: 0, y: 20 }}
                                 animate={{ opacity: 1, y: 0 }}
-                                className="glass-card border-white/10 rounded-lg p-4 shadow-lg"
+                                className="border border-white/10 bg-white/5 backdrop-blur-md rounded-lg p-4 shadow-lg"
                               >
                                 <div className="flex items-center justify-between mb-3">
                                   <div className="flex items-center gap-2">
