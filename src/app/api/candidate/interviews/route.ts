@@ -48,7 +48,7 @@ export async function GET(request: NextRequest) {
         scheduled_at,
         duration_minutes,
         meeting_link,
-        notes,
+        interviewer_notes,
         created_at,
         application:job_applications (
           id,
@@ -89,7 +89,7 @@ export async function GET(request: NextRequest) {
         scheduledAt: interview.scheduled_at,
         duration: interview.duration_minutes,
         meetingLink: interview.meeting_link,
-        notes: interview.notes,
+        notes: interview.interviewer_notes,
         createdAt: interview.created_at,
       };
     });

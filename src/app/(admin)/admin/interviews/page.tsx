@@ -92,13 +92,15 @@ export default function InterviewsPage() {
 
   const getStatusBadge = (status: string) => {
     const styles: Record<string, { bg: string; icon: React.ElementType }> = {
-      pending: { bg: 'bg-gray-500/20 text-gray-400 border-gray-500/30', icon: Clock },
       scheduled: { bg: 'bg-cyan-500/20 text-cyan-400 border-cyan-500/30', icon: Calendar },
+      confirmed: { bg: 'bg-blue-500/20 text-blue-400 border-blue-500/30', icon: CheckCircle },
+      in_progress: { bg: 'bg-purple-500/20 text-purple-400 border-purple-500/30', icon: Clock },
       completed: { bg: 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30', icon: CheckCircle },
       cancelled: { bg: 'bg-red-500/20 text-red-400 border-red-500/30', icon: XCircle },
       no_show: { bg: 'bg-orange-500/20 text-orange-400 border-orange-500/30', icon: AlertCircle },
+      rescheduled: { bg: 'bg-gray-500/20 text-gray-400 border-gray-500/30', icon: Calendar },
     };
-    const style = styles[status] || styles.pending;
+    const style = styles[status] || styles.scheduled;
     const Icon = style.icon;
     return (
       <Badge variant="outline" className={`${style.bg} capitalize`}>
@@ -150,7 +152,7 @@ export default function InterviewsPage() {
         <Card className="bg-white/5 border-white/10">
           <CardContent className="p-4 text-center">
             <p className="text-2xl font-bold text-cyan-400">
-              {statusCounts['scheduled'] || statusCounts['pending'] || 0}
+              {statusCounts['scheduled'] || 0}
             </p>
             <p className="text-gray-400 text-sm">Upcoming</p>
           </CardContent>

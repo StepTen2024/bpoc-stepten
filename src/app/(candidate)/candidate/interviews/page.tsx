@@ -67,12 +67,15 @@ export default function CandidateInterviewsPage() {
 
   const getStatusDisplay = (interview: Interview) => {
     const statusConfig: Record<string, { color: string; icon: React.ElementType; label: string }> = {
-      pending: { color: 'bg-orange-500/20 text-orange-400 border-orange-500/30', icon: AlertCircle, label: 'Interview Requested' },
-      scheduled: { color: 'bg-cyan-500/20 text-cyan-400 border-cyan-500/30', icon: Calendar, label: 'Scheduled' },
+      scheduled: { color: 'bg-orange-500/20 text-orange-400 border-orange-500/30', icon: AlertCircle, label: 'Interview Requested' },
+      confirmed: { color: 'bg-cyan-500/20 text-cyan-400 border-cyan-500/30', icon: Calendar, label: 'Confirmed' },
+      in_progress: { color: 'bg-purple-500/20 text-purple-400 border-purple-500/30', icon: Clock, label: 'In Progress' },
       completed: { color: 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30', icon: CheckCircle, label: 'Completed' },
       cancelled: { color: 'bg-red-500/20 text-red-400 border-red-500/30', icon: XCircle, label: 'Cancelled' },
+      no_show: { color: 'bg-gray-500/20 text-gray-400 border-gray-500/30', icon: XCircle, label: 'No Show' },
+      rescheduled: { color: 'bg-blue-500/20 text-blue-400 border-blue-500/30', icon: Calendar, label: 'Rescheduled' },
     };
-    const config = statusConfig[interview.status] || statusConfig.pending;
+    const config = statusConfig[interview.status] || statusConfig.scheduled;
     const Icon = config.icon;
     
     return (
@@ -100,15 +103,15 @@ export default function CandidateInterviewsPage() {
         <Card className="bg-white/5 border-white/10">
           <CardContent className="p-4 text-center">
             <p className="text-2xl font-bold text-orange-400">
-              {interviews.filter(i => i.status === 'pending').length}
+              {interviews.filter(i => i.status === 'scheduled' && !i.scheduledAt).length}
             </p>
-            <p className="text-gray-400 text-sm">Pending</p>
+            <p className="text-gray-400 text-sm">Awaiting Schedule</p>
           </CardContent>
         </Card>
         <Card className="bg-white/5 border-white/10">
           <CardContent className="p-4 text-center">
             <p className="text-2xl font-bold text-cyan-400">
-              {interviews.filter(i => i.status === 'scheduled').length}
+              {interviews.filter(i => i.status === 'scheduled' && i.scheduledAt).length}
             </p>
             <p className="text-gray-400 text-sm">Scheduled</p>
           </CardContent>
@@ -158,7 +161,7 @@ export default function CandidateInterviewsPage() {
                 transition={{ delay: index * 0.05 }}
               >
                 <Card className={`border-white/10 transition-all ${
-                  interview.status === 'pending' 
+                  interview.status === 'scheduled' && !interview.scheduledAt
                     ? 'bg-orange-500/5 border-orange-500/30' 
                     : 'bg-white/5 hover:border-cyan-500/30'
                 }`}>
@@ -166,12 +169,12 @@ export default function CandidateInterviewsPage() {
                     <div className="flex items-start justify-between">
                       <div className="flex items-start gap-4">
                         <div className={`p-3 rounded-xl ${
-                          interview.status === 'pending' 
+                          interview.status === 'scheduled' && !interview.scheduledAt
                             ? 'bg-orange-500/20' 
                             : 'bg-cyan-500/20'
                         }`}>
                           <TypeIcon className={`h-6 w-6 ${
-                            interview.status === 'pending' 
+                            interview.status === 'scheduled' && !interview.scheduledAt
                               ? 'text-orange-400' 
                               : 'text-cyan-400'
                           }`} />
@@ -227,7 +230,7 @@ export default function CandidateInterviewsPage() {
                         )}
                       </div>
                     </div>
-                    {interview.status === 'pending' && (
+                    {interview.status === 'scheduled' && !interview.scheduledAt && (
                       <div className="mt-4 p-3 rounded-lg bg-orange-500/10 border border-orange-500/20">
                         <p className="text-orange-300 text-sm">
                           🎉 <span className="font-medium">Great news!</span> The recruiter has requested an interview with you. 

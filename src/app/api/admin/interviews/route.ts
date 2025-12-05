@@ -17,7 +17,7 @@ export async function GET(request: NextRequest) {
         scheduled_at,
         duration_minutes,
         meeting_link,
-        notes,
+        interviewer_notes,
         created_at,
         application:job_applications (
           id,
@@ -34,7 +34,7 @@ export async function GET(request: NextRequest) {
           )
         )
       `)
-      .order('scheduled_at', { ascending: true });
+      .order('created_at', { ascending: false });
 
     if (status && status !== 'all') {
       query = query.eq('status', status);
@@ -65,7 +65,7 @@ export async function GET(request: NextRequest) {
         scheduledAt: interview.scheduled_at,
         duration: interview.duration_minutes,
         meetingLink: interview.meeting_link,
-        notes: interview.notes,
+        notes: interview.interviewer_notes,
         createdAt: interview.created_at,
       };
     });
@@ -101,21 +101,25 @@ export async function POST(request: NextRequest) {
       .eq('id', applicationId);
 
     // Create interview record
+    // Note: InterviewStatus enum values: scheduled, confirmed, in_progress, completed, cancelled, no_show, rescheduled
     const { data: interview, error } = await supabaseAdmin
       .from('job_interviews')
       .insert({
         application_id: applicationId,
         interview_type: interviewType,
-        status: scheduledAt ? 'scheduled' : 'pending',
+        status: 'scheduled',
         scheduled_at: scheduledAt || null,
         duration_minutes: durationMinutes,
         meeting_link: meetingLink || null,
-        notes: notes || null,
+        interviewer_notes: notes || null,
       })
       .select()
       .single();
 
-    if (error) throw error;
+    if (error) {
+      console.error('Interview insert error:', error);
+      throw error;
+    }
 
     return NextResponse.json({
       success: true,
@@ -141,7 +145,7 @@ export async function PATCH(request: NextRequest) {
     const updates: Record<string, unknown> = {};
     if (status) updates.status = status;
     if (outcome) updates.outcome = outcome;
-    if (notes !== undefined) updates.notes = notes;
+    if (notes !== undefined) updates.interviewer_notes = notes;
     if (scheduledAt) updates.scheduled_at = scheduledAt;
     if (meetingLink !== undefined) updates.meeting_link = meetingLink;
 
