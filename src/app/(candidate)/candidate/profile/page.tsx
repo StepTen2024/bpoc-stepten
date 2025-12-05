@@ -420,7 +420,13 @@ export default function CandidateProfilePage() {
       })
 
       if (!profileResponse.ok) {
-        throw new Error('Failed to update profile')
+        const errorData = await profileResponse.json().catch(() => ({}))
+        console.error('❌ Profile update failed:', {
+          status: profileResponse.status,
+          statusText: profileResponse.statusText,
+          error: errorData,
+        })
+        throw new Error(errorData.details || errorData.error || 'Failed to update profile')
       }
 
         toast({
