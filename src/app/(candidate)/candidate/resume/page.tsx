@@ -2232,7 +2232,7 @@ export default function ResumeBuilderPage() {
                       Cancel
                     </AlertDialogCancel>
                     <AlertDialogAction
-                      onClick={() => router.push('/resume-builder')}
+                      onClick={() => router.push('/candidate/dashboard')}
                       className="bg-red-600 hover:bg-red-700 text-white"
                     >
                       Yes, Go Back
