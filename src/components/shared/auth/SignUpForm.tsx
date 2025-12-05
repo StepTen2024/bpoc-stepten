@@ -296,7 +296,7 @@ export default function SignUpForm({ open, onOpenChange, onSwitchToLogin }: Sign
           
           console.log('✅ User auto-signed in after manual registration')
           sessionStorage.setItem('hasSignedIn', 'true')
-          sessionStorage.setItem('showProfileCompletion', 'true') // Trigger profile completion modal
+          // Removed auto-popup - users can complete profile on dashboard when ready
           
           // Close the signup modal
           onOpenChange(false)

@@ -59,14 +59,7 @@ export default function CandidateDashboardPage() {
       fetchProfile()
       fetchStats()
       
-      // Check if we should show profile completion modal
-      if (typeof window !== 'undefined') {
-        const showModal = sessionStorage.getItem('showProfileCompletion')
-        if (showModal === 'true') {
-          setShowProfileModal(true)
-          sessionStorage.removeItem('showProfileCompletion')
-        }
-      }
+      // Profile completion modal removed - users can access it from profile page when ready
     }
   }, [user, loading])
 
