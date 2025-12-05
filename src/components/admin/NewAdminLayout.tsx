@@ -19,8 +19,8 @@ export default function NewAdminLayout({ children }: NewAdminLayoutProps) {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   useEffect(() => {
-    // Skip auth check on login page
-    if (pathname === '/admin/login') {
+    // Skip auth check on login and signup pages
+    if (pathname === '/admin/login' || pathname === '/admin/signup') {
       setLoading(false);
       setIsAuthenticated(true);
       return;
