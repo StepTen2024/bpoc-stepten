@@ -269,15 +269,18 @@ export default function Footer() {
               © {new Date().getFullYear()} <span className="font-semibold text-white">BPOC.IO</span>. All rights reserved.
             </div>
             
-                         {/* Legal Links */}
-             <div className="flex items-center space-x-6">
-               <Link href="/privacy-policy" className="text-gray-400 hover:text-white transition-all duration-300 text-sm">
-                 Privacy Policy
-               </Link>
-               <Link href="/terms-and-conditions" className="text-gray-400 hover:text-white transition-all duration-300 text-sm">
-                 Terms and Conditions
-               </Link>
-             </div>
+            {/* Legal Links and Recruiter Link */}
+            <div className="flex items-center space-x-6">
+              <Link href="/privacy-policy" className="text-gray-400 hover:text-white transition-all duration-300 text-sm">
+                Privacy Policy
+              </Link>
+              <Link href="/terms-and-conditions" className="text-gray-400 hover:text-white transition-all duration-300 text-sm">
+                Terms and Conditions
+              </Link>
+              <Link href="/recruiter" className="text-gray-500 hover:text-gray-400 transition-all duration-300 text-xs">
+                For Recruiters
+              </Link>
+            </div>
           </div>
         </motion.div>
       </div>

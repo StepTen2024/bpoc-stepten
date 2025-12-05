@@ -948,17 +948,6 @@ export default function Header({}: HeaderProps) {
                 >
                   Get Started Free
                 </Button>
-                <div className="ml-4">
-                  <Link href="/recruiter">
-                    <Button 
-                      variant="ghost" 
-                      className="text-white hover:text-cyan-400 hover:bg-white/10 transition-all duration-200 px-3"
-                    >
-                      <Briefcase className="w-4 h-4 mr-2" />
-                      Recruiter/Post Job
-                    </Button>
-                  </Link>
-                </div>
               </div>
             )}
 
@@ -1159,15 +1148,6 @@ export default function Header({}: HeaderProps) {
                         >
                           Get Started Free
                         </Button>
-                        <Link href="/recruiter" className="w-full">
-                          <Button 
-                            variant="outline" 
-                            className="w-full border-white/20 text-white hover:bg-white/10 transition-all duration-200"
-                          >
-                            <Briefcase className="w-4 h-4 mr-2" />
-                            Recruiter/Post Job
-                          </Button>
-                        </Link>
                       </div>
                     )}
 
